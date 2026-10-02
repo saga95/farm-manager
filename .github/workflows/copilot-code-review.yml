@@ -11,7 +11,7 @@ jobs:
   copilot-review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
     # Copilot reviews are auto-enabled for repos with GitHub Copilot.
     # This workflow ensures consistent review settings and path-specific instructions.
