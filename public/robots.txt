@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+
+# Sitemap is served dynamically via /api/sitemap
+# After deploying, update the line below with your actual domain:
+# Sitemap: https://yourdomain.com/api/sitemap
+
+# Block common bot paths
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /dashboard/
+
+# Block development and testing paths
+Disallow: /test/
+Disallow: /dev/
+Disallow: /*.json$
+
+# Allow important pages
+Allow: /api/og/
+
+# Crawl delay for respectful crawling
+Crawl-delay: 1

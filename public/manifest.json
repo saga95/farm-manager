@@ -1,0 +1,23 @@
+{
+  "name": "TODO: Your App Name",
+  "short_name": "TODO: AppName",
+  "description": "TODO: Your app description",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "splash_pages": null,
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["productivity", "business"]
+}
