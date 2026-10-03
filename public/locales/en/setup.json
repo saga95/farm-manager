@@ -1,0 +1,38 @@
+{
+  "title": "Set up your farm",
+  "subtitle": "This creates your farm account. You can invite helpers and change these details later.",
+  "sections": {
+    "account": "Farm account",
+    "farm": "Your first farm",
+    "regional": "Regional settings"
+  },
+  "fields": {
+    "tenantName": "Account name",
+    "tenantNameHelp": "Usually your farm or business name.",
+    "farmName": "Farm name",
+    "farmArea": "Area (optional)",
+    "farmAreaUnit": "Unit",
+    "farmLocation": "Location (optional)",
+    "farmLocationHelp": "For example, a village or nearest town.",
+    "timezone": "Time zone",
+    "currency": "Currency",
+    "locale": "Language"
+  },
+  "units": {
+    "ACRE": "Acres",
+    "HECTARE": "Hectares",
+    "PERCH": "Perches",
+    "SQ_M": "Square metres"
+  },
+  "validation": {
+    "required": "This field is required",
+    "tooLong": "Keep it under {{max}} characters",
+    "area": "Enter a positive number"
+  },
+  "submit": "Create my farm",
+  "submitting": "Creating your farm…",
+  "failed": "We couldn't create your farm. Please try again.",
+  "languages": {
+    "en": "English"
+  }
+}

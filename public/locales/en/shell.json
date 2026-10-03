@@ -44,5 +44,6 @@
   "inventory": {
     "produce": "Produce",
     "inputs": "Farm inputs"
-  }
+  },
+  "skipToContent": "Skip to main content"
 }

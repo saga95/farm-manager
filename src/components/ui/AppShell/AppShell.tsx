@@ -40,9 +40,9 @@ export interface AppShellProps {
   /** Page title shown in the top app bar */
   title: string;
   /** Farm/tenant context label (SRS §16 "Farm selector/context") */
-  farmName?: string;
+  farmName?: string | undefined;
   /** Show the floating quick-action menu (hidden for VIEWER, or where a page has its own) */
-  showQuickActions?: boolean;
+  showQuickActions?: boolean | undefined;
   /** Optional element beside the page heading (e.g. page actions) */
   actions?: ReactNode;
   children: ReactNode;

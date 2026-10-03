@@ -1,4 +1,7 @@
 import { useTranslation } from 'react-i18next';
+import Button from '@mui/material/Button';
+import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
+import { useAuth } from '@/contexts/AuthContext';
 import AccountCircleOutlined from '@mui/icons-material/AccountCircleOutlined';
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined';
 import GroupOutlined from '@mui/icons-material/GroupOutlined';
@@ -10,7 +13,8 @@ import { SectionLinks } from '@/components/ui/SectionLinks/SectionLinks';
 
 /** More tab: analytics, search, settings, members, export, account (SRS §20). */
 export default function MorePage() {
-  const { t } = useTranslation('shell');
+  const { t } = useTranslation(['shell', 'auth']);
+  const { logout } = useAuth();
   return (
     <AppPage title={t('nav.more')}>
       <SectionLinks
@@ -48,6 +52,16 @@ export default function MorePage() {
           },
         ]}
       />
+      <Button
+        variant='outlined'
+        color='inherit'
+        startIcon={<LogoutOutlined aria-hidden />}
+        onClick={() => void logout()}
+        sx={{ mt: 3 }}
+        fullWidth
+      >
+        {t('auth:signOut')}
+      </Button>
     </AppPage>
   );
 }

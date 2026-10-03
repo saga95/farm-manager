@@ -1,6 +1,7 @@
 /**
  * AppPage: standard authenticated page wrapper: document <title>, noindex
- * (private farm data must not be indexed) and the AppShell frame.
+ * (private farm data must not be indexed), the sign-in/tenant gate and the
+ * AppShell frame with the current tenant's name.
  */
 
 import type { ReactNode } from 'react';
@@ -11,12 +12,34 @@ import {
   type AppShellProps,
 } from '@/components/ui/AppShell/AppShell';
 import { ComingSoon } from '@/components/ui/ComingSoon/ComingSoon';
+import { AppGate, useTenant } from '@/features/tenant';
 
 export interface AppPageProps extends Omit<AppShellProps, 'children'> {
   children: ReactNode;
 }
 
-export function AppPage({ title, children, ...shell }: AppPageProps) {
+function ShellWithTenant({
+  farmName,
+  showQuickActions,
+  ...shell
+}: AppPageProps) {
+  const { tenant, can } = useTenant();
+  // VIEWERs (no capture rights) don't get quick actions (ux-docs IA notes)
+  const canCapture =
+    can('round.record') ||
+    can('harvest.record') ||
+    can('sale.record') ||
+    can('inventory.adjust');
+  return (
+    <AppShell
+      {...shell}
+      farmName={farmName ?? tenant?.tenantName}
+      showQuickActions={(showQuickActions ?? true) && canCapture}
+    />
+  );
+}
+
+export function AppPage({ title, ...rest }: AppPageProps) {
   const { t } = useTranslation('shell');
   return (
     <>
@@ -24,9 +47,9 @@ export function AppPage({ title, children, ...shell }: AppPageProps) {
         <title>{`${title} · ${t('appName')}`}</title>
         <meta name='robots' content='noindex, nofollow' />
       </Head>
-      <AppShell title={title} {...shell}>
-        {children}
-      </AppShell>
+      <AppGate>
+        <ShellWithTenant title={title} {...rest} />
+      </AppGate>
     </>
   );
 }

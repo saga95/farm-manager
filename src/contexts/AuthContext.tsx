@@ -19,6 +19,14 @@ import {
 } from 'aws-amplify/auth';
 import type { AuthState, UserProfile, UserRole } from '@/types';
 
+/** Thrown by `login` when Cognito needs another step before the user is signed in. */
+export class AuthStepError extends Error {
+  constructor(public readonly step: string) {
+    super(`Additional sign-in step required: ${step}`);
+    this.name = 'AuthStepError';
+  }
+}
+
 // ─── Context types ──────────────────────────────────────────────────────────────
 
 interface AuthContextValue extends AuthState {
@@ -152,7 +160,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const input: SignInInput = { username: email, password };
-    await signIn(input);
+    const result = await signIn(input);
+    // e.g. CONFIRM_SIGN_UP (email not verified yet) or an MFA challenge
+    if (!result.isSignedIn) throw new AuthStepError(result.nextStep.signInStep);
     const profile = await fetchUserProfile();
     dispatch({ type: 'SET_USER', payload: profile });
   }, []);

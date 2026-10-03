@@ -1,7 +1,7 @@
 {
   "welcome": "Welcome",
   "loading": "Loading...",
-  "error": "An error occurred",
+  "error": "Something went wrong. Please try again.",
   "success": "Success",
   "cancel": "Cancel",
   "save": "Save",
@@ -26,5 +26,6 @@
   "lightMode": "Light Mode",
   "darkMode": "Dark Mode",
   "systemMode": "System",
-  "copyright": "© {{year}} All rights reserved"
+  "copyright": "© {{year}} All rights reserved",
+  "retry": "Try again"
 }

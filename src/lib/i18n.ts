@@ -2,10 +2,12 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import Backend from 'i18next-http-backend';
+import enAuth from '../../public/locales/en/auth.json';
 import enCommon from '../../public/locales/en/common.json';
 import enDashboard from '../../public/locales/en/dashboard.json';
 import enForms from '../../public/locales/en/forms.json';
 import enNavigation from '../../public/locales/en/navigation.json';
+import enSetup from '../../public/locales/en/setup.json';
 import enShell from '../../public/locales/en/shell.json';
 
 /**
@@ -19,6 +21,8 @@ export const NAMESPACES = [
   'forms',
   'shell',
   'dashboard',
+  'auth',
+  'setup',
 ] as const;
 
 const resources = {
@@ -28,6 +32,8 @@ const resources = {
     forms: enForms,
     shell: enShell,
     dashboard: enDashboard,
+    auth: enAuth,
+    setup: enSetup,
   },
 };
 
