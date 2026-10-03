@@ -3,6 +3,7 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import Backend from 'i18next-http-backend';
 import enAuth from '../../public/locales/en/auth.json';
+import enCoconut from '../../public/locales/en/coconut.json';
 import enCommon from '../../public/locales/en/common.json';
 import enDashboard from '../../public/locales/en/dashboard.json';
 import enFarm from '../../public/locales/en/farm.json';
@@ -25,6 +26,7 @@ export const NAMESPACES = [
   'auth',
   'setup',
   'farm',
+  'coconut',
 ] as const;
 
 const resources = {
@@ -37,6 +39,7 @@ const resources = {
     auth: enAuth,
     setup: enSetup,
     farm: enFarm,
+    coconut: enCoconut,
   },
 };
 

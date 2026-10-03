@@ -65,3 +65,14 @@ test.describe('Farm screens', () => {
     });
   }
 });
+
+test.describe('Coconut screens', () => {
+  for (const path of ['/coconut/trees', '/coconut/trees/bulk']) {
+    test(`${path} requires sign-in`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page).toHaveURL(
+        new RegExp(`/auth/login\\?redirect=${encodeURIComponent(path)}$`)
+      );
+    });
+  }
+});
