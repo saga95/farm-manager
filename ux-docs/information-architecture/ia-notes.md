@@ -5,7 +5,7 @@
 1. **Five tabs, the SRS's own wording** (§20): Home / Farm / Inventory / Sales / More. Five fits a phone bottom bar with 48px targets at 320px width.
 2. **Coconut lives under Farm**, beside zones, spaces and production cycles. It is not a separate tab. The platform is "farm-aware, crop-aware, not crop-locked" (PR-004). Coconut gets **shortcuts** instead: the Home quick action and the due-soon card.
 3. **The plucking flow is a focused sub-flow.** The bottom navigation is hidden during active capture (SCR-009) to maximise space and prevent accidental exits. A persistent "Round in progress" banner lets the user return to it from anywhere.
-4. **Quick actions** (FAB / speed dial) on top-level tabs: New Plucking Round, Record Harvest, Record Sale, Inventory Movement (§16, §20).
+4. **Quick actions**: New Plucking Round, Record Harvest, Record Sale, Inventory Movement (§16, §20). On **Home** they appear as large tiles at the top of the dashboard. On every other tab they appear as a floating speed-dial button above the bottom navigation.
 5. **Analytics goes under More.** The mobile Home stays light on charts (§16 "avoid overloading mobile dashboard with charts").
 6. **Desktop (≥ md):** the bottom bar becomes a side navigation rail with the same five destinations, so the IA doesn't change between devices.
 7. **Deep links are stable and ID-based** (`/coconut/trees/[treeId]`), so a future mobile app and shared links can address the same records.

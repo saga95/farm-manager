@@ -1,0 +1,48 @@
+{
+  "appName": "My Smart Need AgriTech",
+  "farmFallback": "My farm",
+  "nav": {
+    "label": "Main navigation",
+    "home": "Home",
+    "farm": "Farm",
+    "inventory": "Inventory",
+    "sales": "Sales",
+    "more": "More"
+  },
+  "quickActions": {
+    "label": "Quick actions",
+    "open": "Open quick actions",
+    "newRound": "New plucking round",
+    "recordHarvest": "Record harvest",
+    "recordSale": "Record sale",
+    "inventoryMovement": "Inventory movement"
+  },
+  "comingSoon": {
+    "title": "Coming soon",
+    "body": "This screen is being built. You can follow progress on the project board.",
+    "backHome": "Back to Home"
+  },
+  "more": {
+    "analytics": "Analytics",
+    "search": "Search",
+    "settings": "Farm & tenant settings",
+    "members": "Members",
+    "export": "Export data",
+    "account": "Account"
+  },
+  "farm": {
+    "coconut": "Coconut trees",
+    "rounds": "Plucking rounds",
+    "zones": "Zones",
+    "spaces": "Growing spaces",
+    "cycles": "Production cycles"
+  },
+  "sales": {
+    "history": "Sales history",
+    "buyers": "Buyers"
+  },
+  "inventory": {
+    "produce": "Produce",
+    "inputs": "Farm inputs"
+  }
+}

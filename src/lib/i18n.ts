@@ -34,7 +34,7 @@ i18n
     supportedLngs: ['en'],
 
     // Namespaces
-    ns: ['common', 'navigation', 'forms'],
+    ns: ['common', 'navigation', 'forms', 'shell', 'dashboard'],
     defaultNS: 'common',
 
     react: {
