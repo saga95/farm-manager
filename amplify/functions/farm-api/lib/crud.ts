@@ -134,6 +134,7 @@ export async function createWithAudit(opts: {
     // Idempotent replay (ADR-0004 §1): same actor, same id → return what's stored.
     if (
       existing &&
+      existing['id'] === id &&
       existing['createdBy'] === ctx.userId &&
       existing['tenantId'] === ctx.access.tenantId
     ) {
@@ -202,6 +203,22 @@ export async function updateWithAudit(opts: {
     }
     throw e;
   }
+}
+
+/** Get an entity by id via GSI2; returns undefined unless it belongs to the caller's tenant. */
+export async function getById(
+  id: string,
+  ctx: TenantContext
+): Promise<Item | undefined> {
+  const res = await ddb.send(
+    new QueryCommand({
+      TableName: tableName(),
+      IndexName: 'GSI2',
+      KeyConditionExpression: 'GSI2PK = :pk',
+      ExpressionAttributeValues: { ':pk': keys.byId(id).GSI2PK },
+    })
+  );
+  return (res.Items ?? []).find(i => i['tenantId'] === ctx.access.tenantId);
 }
 
 export async function queryPrefix(

@@ -66,6 +66,22 @@ export const keys: KeyBuilders = {
     SK: `SPACE${SEP}${assertId('spaceId', spaceId)}`,
   }),
 
+  /** Coconut tree, keyed by its unique-per-farm code (FR-CN-004). */
+  tree: (tenantId: string, farmId: string, code: string): Key => ({
+    PK: keys.farmPk(tenantId, farmId),
+    SK: `TREE${SEP}${assertId('code', code)}`,
+  }),
+  /** GSI1: trees by farm + status (ADR-0002). */
+  treeByStatus: (
+    tenantId: string,
+    farmId: string,
+    status: string,
+    code: string
+  ) => ({
+    GSI1PK: `${keys.farmPk(tenantId, farmId)}${SEP}TS${SEP}${assertId('status', status)}`,
+    GSI1SK: `TREE${SEP}${assertId('code', code)}`,
+  }),
+
   /** GSI2: get any entity by id; results MUST be tenant-checked. */
   byId: (id: string) => ({ GSI2PK: `ID${SEP}${assertId('id', id)}` }),
 
@@ -86,6 +102,7 @@ export const keys: KeyBuilders = {
     farms: 'FARM#',
     zones: 'ZONE#',
     spaces: 'SPACE#',
+    trees: 'TREE#',
   },
   tenantPk: t,
 };
@@ -104,6 +121,13 @@ interface KeyBuilders {
   farmPk: (tenantId: string, farmId: string) => string;
   zone: (tenantId: string, farmId: string, zoneId: string) => Key;
   space: (tenantId: string, farmId: string, spaceId: string) => Key;
+  tree: (tenantId: string, farmId: string, code: string) => Key;
+  treeByStatus: (
+    tenantId: string,
+    farmId: string,
+    status: string,
+    code: string
+  ) => { GSI1PK: string; GSI1SK: string };
   byId: (id: string) => { GSI2PK: string };
   audit: (
     tenantId: string,
@@ -113,7 +137,7 @@ interface KeyBuilders {
   ) => Key;
   prefix: Readonly<
     Record<
-      'members' | 'roles' | 'profiles' | 'farms' | 'zones' | 'spaces',
+      'members' | 'roles' | 'profiles' | 'farms' | 'zones' | 'spaces' | 'trees',
       string
     >
   >;

@@ -7,6 +7,7 @@ import {
   BatchGetCommand,
   DynamoDBDocumentClient,
   GetCommand,
+  PutCommand,
   QueryCommand,
   TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
@@ -22,6 +23,12 @@ export function installFakeDdb() {
   mock.on(GetCommand).callsFake(input => {
     const item = store.get(k(input.Key.PK, input.Key.SK));
     return { Item: item ? structuredClone(item) : undefined };
+  });
+
+  mock.on(PutCommand).callsFake(input => {
+    const item = input.Item as Item;
+    store.set(k(item['PK'], item['SK']), structuredClone(item));
+    return {};
   });
 
   mock.on(BatchGetCommand).callsFake(input => {
