@@ -27,6 +27,18 @@ const spaceArgs = {
   notes: a.string(),
 };
 
+/** Optional tree fields shared by create/update (§7.1). */
+const treeArgs = {
+  tenantId: a.id().required(),
+  farmId: a.id().required(),
+  displayLabel: a.string(),
+  zoneId: a.id(),
+  variety: a.string(),
+  plantedAt: a.string(),
+  locationNote: a.string(),
+  notes: a.string(),
+};
+
 const schema = a.schema({
   TenantMembership: a.customType({
     tenantId: a.id().required(),
@@ -95,6 +107,35 @@ const schema = a.schema({
     version: a.integer().required(),
     createdAt: a.string(),
     updatedAt: a.string(),
+  }),
+
+  Tree: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    farmId: a.id().required(),
+    code: a.string().required(),
+    displayLabel: a.string(),
+    cropCode: a.string().required(),
+    zoneId: a.id(),
+    status: a.string().required(),
+    variety: a.string(),
+    plantedAt: a.string(),
+    locationNote: a.string(),
+    notes: a.string(),
+    coverPhotoId: a.id(),
+    version: a.integer().required(),
+    createdAt: a.string(),
+    updatedAt: a.string(),
+  }),
+
+  TreeRef: a.customType({
+    id: a.id().required(),
+    code: a.string().required(),
+  }),
+
+  BulkCreateTreesResult: a.customType({
+    created: a.ref('TreeRef').required().array().required(),
+    skipped: a.string().required().array().required(),
   }),
 
   CreateTenantResult: a.customType({
@@ -234,6 +275,65 @@ const schema = a.schema({
       status: a.string(),
     })
     .returns(a.ref('GrowingSpace').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  // ─── Coconut tree registry (#40–#45) ──────────────────────────────────────
+  listTrees: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      includeInactive: a.boolean(),
+    })
+    .returns(a.ref('Tree').required().array().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  getTree: a
+    .query()
+    .arguments({ tenantId: a.id().required(), treeId: a.id().required() })
+    .returns(a.ref('Tree').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  createTree: a
+    .mutation()
+    .arguments({
+      ...treeArgs,
+      treeId: a.id().required(),
+      code: a.string().required(),
+      status: a.string().required(),
+    })
+    .returns(a.ref('Tree').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  updateTree: a
+    .mutation()
+    .arguments({
+      ...treeArgs,
+      code: a.string().required(),
+      expectedVersion: a.integer().required(),
+      status: a.string(),
+    })
+    .returns(a.ref('Tree').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  bulkCreateTrees: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      prefix: a.string(),
+      start: a.integer().required(),
+      count: a.integer().required(),
+      width: a.integer(),
+      status: a.string().required(),
+      zoneId: a.id(),
+    })
+    .returns(a.ref('BulkCreateTreesResult').required())
     .authorization(allow => [allow.authenticated()])
     .handler(a.handler.function(farmApi)),
 });

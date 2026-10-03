@@ -1,4 +1,11 @@
 import type { Operation } from '../lib/operation';
+import {
+  bulkCreateTrees,
+  createTree,
+  getTree,
+  listTrees,
+  updateTree,
+} from './coconut';
 import { createTenant } from './createTenant';
 import {
   createSpace,
@@ -26,5 +33,10 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       listSpaces,
       createSpace,
       updateSpace,
+      listTrees,
+      getTree,
+      createTree,
+      bulkCreateTrees,
+      updateTree,
     ].map(op => [op.name, op])
   );
