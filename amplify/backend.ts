@@ -87,6 +87,14 @@ backend.farmApi.addEnvironment('FARM_TABLE_NAME', farmTable.tableName);
 // ─── Cognito password policy ────────────────────────────────────────────────────
 
 const { cfnUserPool } = backend.auth.resources.cfnResources;
+
+// Email-only sign-in (PO decision 2026-10-03). Cognito does not allow
+// `UsernameAttributes` to be updated in place (deployment 14 failed with
+// "Updates are not allowed for property - UsernameAttributes"), so a new logical
+// ID makes CloudFormation create a replacement pool and delete the old one.
+// Existing dev accounts were dropped deliberately. Do NOT revert or rename this
+// ID: that would replace the pool again and delete every user.
+cfnUserPool.overrideLogicalId('amplifyAuthUserPoolEmailOnly');
 cfnUserPool.policies = {
   passwordPolicy: {
     minimumLength: 8,
