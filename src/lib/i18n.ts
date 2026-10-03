@@ -55,6 +55,8 @@ void i18n.use(initReactI18next).init({
   // English first (SRS §25.6). Sinhala (si) and Tamil (ta) will be added later.
   supportedLngs: ['en'],
   nonExplicitSupportedLngs: true,
+  // Browsers report regional codes (en-US); only base-language files exist
+  load: 'languageOnly',
   ns: [...NAMESPACES],
   defaultNS: 'common',
   debug: false,

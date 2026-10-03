@@ -21,3 +21,11 @@ test.describe('server-rendered translations', () => {
     await expect(page.getByRole('status')).toHaveText('Loading your farm…');
   });
 });
+
+test.describe('setup page title', () => {
+  test.use({ javaScriptEnabled: false });
+  test('has a translated title while loading', async ({ page }) => {
+    await page.goto('/setup');
+    await expect(page).toHaveTitle('Set up your farm · My Smart Need AgriTech');
+  });
+});
