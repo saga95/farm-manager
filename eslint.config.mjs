@@ -58,7 +58,7 @@ const eslintConfig = [
       // TypeScript specific rules
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { argsIgnorePattern: '^_' },
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
       // prefer-const handled by base ESLint 'prefer-const' rule below
