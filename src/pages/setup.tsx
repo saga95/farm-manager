@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
 import { ulid } from 'ulid';
@@ -35,7 +36,7 @@ type Values = {
 
 /** SCR-002 Tenant / farm initial setup (US-001, US-002). */
 export default function SetupPage() {
-  const { t } = useTranslation('setup');
+  const { t } = useTranslation(['setup', 'shell']);
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
   const { selectTenant, refresh } = useTenant();
@@ -63,7 +64,17 @@ export default function SetupPage() {
       void router.replace('/auth/login?redirect=%2Fsetup');
   }, [isLoading, isAuthenticated, router]);
 
-  if (isLoading || !isAuthenticated) return <GateLoading />;
+  if (isLoading || !isAuthenticated) {
+    return (
+      <>
+        <Head>
+          <title>{`${t('title')} · ${t('shell:appName')}`}</title>
+          <meta name='robots' content='noindex, nofollow' />
+        </Head>
+        <GateLoading />
+      </>
+    );
+  }
 
   const set = (f: keyof Values) => (e: { target: { value: string } }) =>
     setValues(v => ({ ...v, [f]: e.target.value }));
