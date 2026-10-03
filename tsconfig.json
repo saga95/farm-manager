@@ -20,15 +20,15 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
+      "@/design-system": ["./design-system/index.ts"],
+      "@/design-system/*": ["./design-system/*"],
       "@/components/*": ["./src/components/*"],
       "@/lib/*": ["./src/lib/*"],
       "@/hooks/*": ["./src/hooks/*"],
       "@/utils/*": ["./src/utils/*"],
       "@/types/*": ["./src/types/*"],
       "@/styles/*": ["./src/styles/*"],
-      "@/design-system": ["./design-system/index.ts"],
-      "@/design-system/*": ["./design-system/*"]
+      "@/*": ["./src/*"]
     },
     // Strict type-checking options
     "noImplicitAny": true,

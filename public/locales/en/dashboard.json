@@ -1,0 +1,39 @@
+{
+  "title": "Home",
+  "greeting": "What's happening on {{farm}}",
+  "quickActions": "Quick actions",
+  "coconut": {
+    "title": "Coconut",
+    "empty": "No trees registered yet.",
+    "cta": "Register trees"
+  },
+  "nextPlucking": {
+    "title": "Next plucking",
+    "empty": "Not enough history yet. Estimates appear after a few recorded rounds.",
+    "cta": "Plan a round"
+  },
+  "produce": {
+    "title": "Produce available",
+    "empty": "No produce recorded yet.",
+    "cta": "View inventory"
+  },
+  "sales": {
+    "title": "Sales this month",
+    "empty": "No sales recorded this month.",
+    "cta": "Record a sale"
+  },
+  "polytunnel": {
+    "title": "Polytunnel & crops",
+    "empty": "No active production cycles.",
+    "cta": "Go to Farm"
+  },
+  "inputs": {
+    "title": "Farm inputs",
+    "empty": "No farm inputs tracked yet.",
+    "cta": "View farm inputs"
+  },
+  "activity": {
+    "title": "Recent activity",
+    "empty": "Harvests, samples, stock movements and sales will appear here."
+  }
+}

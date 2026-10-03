@@ -18,9 +18,10 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    // Mobile-first product (SRS §25.1): phone viewport on Chromium so CI covers it
     {
       name: 'mobile',
-      use: { ...devices['iPhone 14'] },
+      use: { ...devices['Pixel 7'] },
     },
   ],
 
