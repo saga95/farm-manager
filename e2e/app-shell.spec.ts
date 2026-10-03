@@ -54,3 +54,14 @@ test.describe('Sign-in gate', () => {
     ).toBeVisible();
   });
 });
+
+test.describe('Farm screens', () => {
+  for (const path of ['/farm/zones', '/farm/spaces']) {
+    test(`${path} requires sign-in`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page).toHaveURL(
+        new RegExp(`/auth/login\\?redirect=${encodeURIComponent(path)}$`)
+      );
+    });
+  }
+});

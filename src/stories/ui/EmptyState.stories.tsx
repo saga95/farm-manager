@@ -40,7 +40,9 @@ export const Page: Story = {
   },
 };
 export const WithoutAction: Story = {
-  args: { message: 'Harvests, samples, stock movements and sales will appear here.' },
+  args: {
+    message: 'Harvests, samples, stock movements and sales will appear here.',
+  },
   render: ({ message }) => <EmptyState message={message} />,
 };
 export const DarkMode: Story = { globals: { theme: 'dark' } };

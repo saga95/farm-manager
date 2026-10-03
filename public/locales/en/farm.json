@@ -1,0 +1,117 @@
+{
+  "noFarm": "No farm found for this account.",
+  "zones": {
+    "title": "Zones",
+    "intro": "Zones are the main areas of your farm, such as the coconut area, the polytunnel or the backyard.",
+    "add": "Add zone",
+    "edit": "Edit zone",
+    "empty": "No zones yet. Add the main areas of your farm to get started.",
+    "archived": "Archived",
+    "archive": "Archive zone",
+    "restore": "Restore",
+    "types": {
+      "COCONUT_AREA": "Coconut area",
+      "POLYTUNNEL": "Polytunnel",
+      "PEPPER_AREA": "Pepper area",
+      "BANANA_AREA": "Banana area",
+      "BACKYARD": "Backyard",
+      "STORAGE": "Storage area",
+      "OTHER": "Other"
+    }
+  },
+  "spaces": {
+    "title": "Growing spaces",
+    "intro": "Record the spaces you can grow in, including small, awkward or unused ones.",
+    "add": "Add space",
+    "edit": "Edit space",
+    "empty": "No growing spaces yet.",
+    "emptyFiltered": "No spaces match this filter.",
+    "filter": {
+      "all": "All",
+      "ACTIVE": "In use",
+      "UNUSED": "Unused"
+    },
+    "statuses": {
+      "ACTIVE": "In use",
+      "UNUSED": "Unused",
+      "ARCHIVED": "Archived"
+    },
+    "markUnused": "Mark as unused",
+    "markActive": "Mark as in use",
+    "archive": "Archive space",
+    "inZone": "In {{zone}}",
+    "area": "{{value}} m²",
+    "types": {
+      "OPEN_GROUND": "Open ground",
+      "BED": "Bed",
+      "RAISED_BED": "Raised bed",
+      "POLYTUNNEL": "Polytunnel",
+      "GREENHOUSE": "Greenhouse",
+      "GROW_BAG_AREA": "Grow-bag area",
+      "CONTAINER_AREA": "Container area",
+      "NARROW_STRIP": "Narrow strip",
+      "UNDER_TREE": "Under trees",
+      "OTHER": "Other"
+    }
+  },
+  "fields": {
+    "name": "Name",
+    "type": "Type",
+    "description": "Description (optional)",
+    "area": "Area (optional)",
+    "areaUnit": "Unit",
+    "zone": "Zone (optional)",
+    "noZone": "No zone",
+    "width": "Width (optional)",
+    "length": "Length (optional)",
+    "lengthUnit": "Unit",
+    "sunlight": "Sunlight",
+    "shade": "Shade",
+    "water": "Water access",
+    "drainage": "Drainage",
+    "slope": "Slope",
+    "surface": "Surface",
+    "currentUse": "Current use (optional)",
+    "notes": "Notes (optional)",
+    "notSet": "Not set",
+    "siteConditions": "Site conditions"
+  },
+  "options": {
+    "LOW": "Low",
+    "MEDIUM": "Medium",
+    "HIGH": "High",
+    "NONE": "None",
+    "CARRIED": "Carried by hand",
+    "TAP_NEARBY": "Tap nearby",
+    "IRRIGATED": "Irrigated",
+    "POOR": "Poor",
+    "FAIR": "Fair",
+    "GOOD": "Good",
+    "FLAT": "Flat",
+    "GENTLE": "Gentle",
+    "STEEP": "Steep",
+    "SOIL": "Soil",
+    "GRAVEL": "Gravel",
+    "CONCRETE": "Concrete",
+    "MIXED": "Mixed",
+    "M": "metres",
+    "FT": "feet",
+    "ACRE": "Acres",
+    "HECTARE": "Hectares",
+    "PERCH": "Perches",
+    "SQ_M": "Square metres",
+    "OTHER": "Other"
+  },
+  "actions": {
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "edit": "Edit"
+  },
+  "errors": {
+    "required": "This field is required",
+    "positive": "Enter a positive number",
+    "conflict": "Someone else changed this. Close the form and try again.",
+    "failed": "Couldn't save. Please try again."
+  }
+}

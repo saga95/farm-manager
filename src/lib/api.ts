@@ -104,3 +104,153 @@ export async function createTenant(
     }>
   );
 }
+
+// ─── Farms, zones, growing spaces (#33–#36) ──────────────────────────────────
+
+export interface Farm {
+  id: string;
+  tenantId: string;
+  name: string;
+  description?: string | null;
+  area?: number | null;
+  areaUnit?: string | null;
+  locationLabel?: string | null;
+  timezone?: string | null;
+  status: string;
+  version: number;
+}
+
+export interface Zone {
+  id: string;
+  tenantId: string;
+  farmId: string;
+  name: string;
+  zoneType: string;
+  description?: string | null;
+  area?: number | null;
+  areaUnit?: string | null;
+  status: string;
+  version: number;
+}
+
+export interface GrowingSpace {
+  id: string;
+  tenantId: string;
+  farmId: string;
+  parentZoneId?: string | null;
+  name: string;
+  spaceType: string;
+  width?: number | null;
+  length?: number | null;
+  lengthUnit?: string | null;
+  calculatedAreaSqM?: number | null;
+  sunlightLevel?: string | null;
+  shadeLevel?: string | null;
+  waterAccess?: string | null;
+  drainage?: string | null;
+  slope?: string | null;
+  surfaceType?: string | null;
+  currentUse?: string | null;
+  notes?: string | null;
+  status: string;
+  version: number;
+}
+
+/* The generated client is typed from the schema; results are narrowed to our view types. */
+type AnyOp = (vars: Record<string, unknown>) => Promise<Result<unknown>>;
+const q = (name: string): AnyOp =>
+  (api().queries as unknown as Record<string, AnyOp>)[name] as AnyOp;
+const mu = (name: string): AnyOp =>
+  (api().mutations as unknown as Record<string, AnyOp>)[name] as AnyOp;
+
+export const listFarms = async (tenantId: string) => [
+  ...(unwrap(await q('listFarms')({ tenantId })) as Farm[]),
+];
+
+export const listZones = async (
+  tenantId: string,
+  farmId: string,
+  includeArchived = false
+) => [
+  ...(unwrap(
+    await q('listZones')({ tenantId, farmId, includeArchived })
+  ) as Zone[]),
+];
+
+export type ZoneInput = Pick<Zone, 'name' | 'zoneType'> &
+  Partial<Pick<Zone, 'description' | 'area' | 'areaUnit'>>;
+
+export const createZone = async (
+  tenantId: string,
+  farmId: string,
+  zoneId: string,
+  input: ZoneInput
+) =>
+  unwrap(
+    await mu('createZone')({ tenantId, farmId, zoneId, ...input })
+  ) as Zone;
+
+export const updateZone = async (
+  tenantId: string,
+  zone: Pick<Zone, 'id' | 'farmId' | 'version'>,
+  changes: Partial<ZoneInput & { status: string }>
+) =>
+  unwrap(
+    await mu('updateZone')({
+      tenantId,
+      farmId: zone.farmId,
+      zoneId: zone.id,
+      expectedVersion: zone.version,
+      ...changes,
+    })
+  ) as Zone;
+
+export const listSpaces = async (
+  tenantId: string,
+  farmId: string,
+  status?: string
+) => [
+  ...(unwrap(
+    await q('listSpaces')({ tenantId, farmId, ...(status ? { status } : {}) })
+  ) as GrowingSpace[]),
+];
+
+export type SpaceInput = Pick<GrowingSpace, 'name' | 'spaceType'> &
+  Partial<
+    Omit<
+      GrowingSpace,
+      | 'id'
+      | 'tenantId'
+      | 'farmId'
+      | 'name'
+      | 'spaceType'
+      | 'status'
+      | 'version'
+      | 'calculatedAreaSqM'
+    >
+  >;
+
+export const createSpace = async (
+  tenantId: string,
+  farmId: string,
+  spaceId: string,
+  input: SpaceInput
+) =>
+  unwrap(
+    await mu('createSpace')({ tenantId, farmId, spaceId, ...input })
+  ) as GrowingSpace;
+
+export const updateSpace = async (
+  tenantId: string,
+  space: Pick<GrowingSpace, 'id' | 'farmId' | 'version'>,
+  changes: Partial<SpaceInput & { status: string }>
+) =>
+  unwrap(
+    await mu('updateSpace')({
+      tenantId,
+      farmId: space.farmId,
+      spaceId: space.id,
+      expectedVersion: space.version,
+      ...changes,
+    })
+  ) as GrowingSpace;
