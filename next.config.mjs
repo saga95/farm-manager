@@ -4,6 +4,12 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 });
 
+// AWS Amplify Hosting build (AWS_APP_ID is set by Amplify). The Standard build
+// container (8 GiB) ran out of memory during `next build`, so on Amplify:
+// - lint and type-check are skipped (GitHub CI enforces both before any merge)
+// - static generation and build tracing use a single worker
+const isAmplifyBuild = Boolean(process.env.AWS_APP_ID);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
@@ -28,8 +34,12 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
+  eslint: { ignoreDuringBuilds: isAmplifyBuild },
+  typescript: { ignoreBuildErrors: isAmplifyBuild },
+
   // Experimental features for performance
   experimental: {
+    ...(isAmplifyBuild ? { cpus: 1, workerThreads: false } : {}),
     optimizePackageImports: [
       '@mui/material',
       '@mui/icons-material',
