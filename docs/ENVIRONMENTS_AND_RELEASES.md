@@ -15,12 +15,12 @@
 
 ## Branches → environments
 
-| Branch | Environment | Deploys | Who pushes |
-| --- | --- | --- | --- |
-| `development` | **dev** (live test environment) | Amplify, automatically on every push | Merged PRs from `feature/*`, `fix/*`, `chore/*` |
-| `main` | **prod** | Amplify, automatically on every push; semantic-release then tags the release | Merged PR from `development` (release PR) |
-| `feature/*`, `fix/*`, `chore/*`, `docs/*` | none | Not deployed. CI runs quality gates only. | Contributors |
-| `hotfix/*` | none | Branch from `main` → PR to `main`, then merge `main` back into `development` | Maintainers |
+| Branch                                    | Environment                     | Deploys                                                                      | Who pushes                                      |
+| ----------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------- |
+| `development`                             | **dev** (live test environment) | Amplify, automatically on every push                                         | Merged PRs from `feature/*`, `fix/*`, `chore/*` |
+| `main`                                    | **prod**                        | Amplify, automatically on every push; semantic-release then tags the release | Merged PR from `development` (release PR)       |
+| `feature/*`, `fix/*`, `chore/*`, `docs/*` | none                            | Not deployed. CI runs quality gates only.                                    | Contributors                                    |
+| `hotfix/*`                                | none                            | Branch from `main` → PR to `main`, then merge `main` back into `development` | Maintainers                                     |
 
 There is **no `staging` branch** and no preview deployment for pull requests.
 
@@ -41,12 +41,12 @@ feature/x ──PR──▶ development ──(push)──▶ Amplify dev   ← 
 
 ## Versioning
 
-| Commit type | Release |
-| --- | --- |
-| `fix:`, `perf:` | patch (0.1.**1**) |
-| `feat:` | minor (0.**2**.0) |
-| `feat!:` or a `BREAKING CHANGE:` footer | major |
-| `docs:`, `chore:`, `refactor:`, `test:`, `ci:`, `style:` | no release |
+| Commit type                                              | Release           |
+| -------------------------------------------------------- | ----------------- |
+| `fix:`, `perf:`                                          | patch (0.1.**1**) |
+| `feat:`                                                  | minor (0.**2**.0) |
+| `feat!:` or a `BREAKING CHANGE:` footer                  | major             |
+| `docs:`, `chore:`, `refactor:`, `test:`, `ci:`, `style:` | no release        |
 
 - Releases start from the baseline tag `v0.0.0`, so the product stays on **0.x** while V1 is being built.
 - Cut **`v1.0.0`** deliberately when the SRS "Definition of V1 Done" (§34, §41.17) is met. Do it with a commit that has a `BREAKING CHANGE:` footer such as "V1 go-live".
@@ -65,6 +65,36 @@ feature/x ──PR──▶ development ──(push)──▶ Amplify dev   ← 
 ## Environment detection in code
 
 `src/lib/env.ts` → `getEnvironment()` returns only `'development' | 'production'`, based on Amplify's `AWS_BRANCH` (exposed as `NEXT_PUBLIC_AWS_BRANCH`). Use `isProduction()` / `isDevelopment()`. Never read `process.env` directly.
+
+## How dev and prod are used
+
+- **dev** (`development`) is the live test environment **and the demo environment** shown to prospective users. Demo data lives in its own demo tenant, never mixed with real farm data.
+- **prod** (`main`) is the product owner's production. The first prod release is cut after a successful test run on dev.
+
+## Deployment topologies (note for the future)
+
+The default is **one shared, multi-tenant deployment**: one Amplify app with `development` and `main`, where each customer is a **tenant**.
+
+A customer may later need a **dedicated deployment**:
+
+| Option                                               | What it is                                                                             |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Separate Amplify app, **our** AWS account            | A new Amplify app connected to this repo, with its own backend (Cognito, DynamoDB, S3) |
+| Separate Amplify app, **the customer's** AWS account | The same, created in their account. Resources can move there later.                    |
+
+Rules for dedicated deployments:
+
+- Each one is a **prod environment for that customer**. It is still tested on our dev first, and we add **no** extra test environments for it.
+- It runs the **same code**. The multi-tenant model doesn't change; a dedicated deployment simply holds one tenant (or a few).
+- It tracks released code only: `main`, or a customer branch fast-forwarded to a semantic-release tag `vX.Y.Z`.
+
+To keep the code portable, every contributor must:
+
+- Never hardcode AWS account IDs, regions, Amplify app IDs, domains or resource names. Use Amplify-generated names, `amplify_outputs.json` and per-branch environment variables.
+- Keep every record tenant-scoped (`tenantId`), so a tenant's data can be exported and moved on its own.
+- Keep S3 keys tenant-prefixed (`tenants/{tenantId}/…`, SRS §26.4), so media can be copied per tenant.
+- Plan data moves as **DynamoDB export/import plus S3 copy per tenant**. **Cognito users can't be moved with their passwords**, so a move needs either a password reset or a user-migration Lambda trigger.
+- Enable backups (DynamoDB point-in-time recovery) before onboarding any external tenant or dedicated customer (SRS §25.4).
 
 ## What contributors must not do
 
