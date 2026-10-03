@@ -1,194 +1,152 @@
-import { useState } from 'react';
+import { type FormEvent, useState } from 'react';
+import NextLink from 'next/link';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
-import Link from 'next/link';
-import {
-  Alert,
-  Box,
-  Button,
-  Container,
-  Paper,
-  TextField,
-  Typography,
-} from '@mui/material';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
+import Button from '@mui/material/Button';
+import Link from '@mui/material/Link';
+import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
+import { AuthCard } from '@/components/ui/AuthCard/AuthCard';
 import { useAuth } from '@/contexts/AuthContext';
+import { registerSchema } from '@/features/tenant/authSchemas';
 
-const registerSchema = z
-  .object({
-    email: z.string().email('Enter a valid email'),
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/[A-Z]/, 'Must contain an uppercase letter')
-      .regex(/[a-z]/, 'Must contain a lowercase letter')
-      .regex(/[0-9]/, 'Must contain a number')
-      .regex(/[^A-Za-z0-9]/, 'Must contain a special character'),
-    confirmPassword: z.string(),
-    givenName: z.string().optional(),
-    familyName: z.string().optional(),
-  })
-  .refine(data => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  });
+type Field =
+  | 'givenName'
+  | 'familyName'
+  | 'email'
+  | 'password'
+  | 'confirmPassword';
 
-type RegisterFormData = z.infer<typeof registerSchema>;
-
-/**
- * Register page — create a new account via Cognito.
- * Pattern from uwu-sri-lanka/website.
- */
+/** Account creation; the farm itself is created next in /setup (SCR-002). */
 export default function RegisterPage() {
+  const { t } = useTranslation('auth');
   const router = useRouter();
-  const { register: registerUser } = useAuth();
-  const [error, setError] = useState<string | null>(null);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
+  const { register } = useAuth();
+  const [values, setValues] = useState<Record<Field, string>>({
+    givenName: '',
+    familyName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
   });
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<Field, string>>
+  >({});
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const onSubmit = async (data: RegisterFormData) => {
+  const set = (f: Field) => (e: { target: { value: string } }) =>
+    setValues(v => ({ ...v, [f]: e.target.value }));
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     setError(null);
+    const parsed = registerSchema({
+      email: t('validation.email'),
+      password: t('validation.passwordRules'),
+      match: t('validation.passwordMatch'),
+    }).safeParse(values);
+    if (!parsed.success) {
+      setFieldErrors(
+        Object.fromEntries(
+          parsed.error.issues.map(i => [String(i.path[0]), i.message])
+        )
+      );
+      return;
+    }
+    setFieldErrors({});
+    setSubmitting(true);
     try {
-      const result = await registerUser({
-        username: data.email,
-        password: data.password,
+      const { email, password, givenName, familyName } = parsed.data;
+      await register({
+        username: email,
+        password,
         options: {
           userAttributes: {
-            email: data.email,
-            ...(data.givenName && { given_name: data.givenName }),
-            ...(data.familyName && { family_name: data.familyName }),
+            email,
+            ...(givenName ? { given_name: givenName } : {}),
+            ...(familyName ? { family_name: familyName } : {}),
           },
         },
       });
-
-      if (!result.isSignUpComplete) {
-        // Redirect to confirmation page
-        router.push({
-          pathname: '/auth/confirm',
-          query: { email: data.email },
-        });
-      } else {
-        router.push('/auth/login');
-      }
+      await router.push({ pathname: '/auth/confirm', query: { email } });
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : 'Registration failed. Please try again.'
+        (err as { name?: string }).name === 'UsernameExistsException'
+          ? t('register.exists')
+          : t('register.failed')
       );
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  const field = (
+    f: Field,
+    label: string,
+    props: Record<string, unknown> = {}
+  ) => (
+    <TextField
+      label={label}
+      value={values[f]}
+      onChange={set(f)}
+      error={Boolean(fieldErrors[f])}
+      helperText={fieldErrors[f]}
+      {...props}
+    />
+  );
+
   return (
-    <>
-      <Head>
-        <title>Create Account</title>
-      </Head>
-      <Container maxWidth='sm' sx={{ py: 8 }}>
-        <Paper sx={{ p: 4 }}>
-          <Typography variant='h4' component='h1' align='center' gutterBottom>
-            Create Account
-          </Typography>
-          <Typography
-            variant='body2'
-            align='center'
-            color='text.secondary'
-            sx={{ mb: 3 }}
-          >
-            Sign up for a new account
-          </Typography>
-
-          {error && (
-            <Alert severity='error' sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          <Box component='form' onSubmit={handleSubmit(onSubmit)} noValidate>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                {...register('givenName')}
-                label='First Name'
-                fullWidth
-                margin='normal'
-                autoComplete='given-name'
-                error={!!errors.givenName}
-                helperText={errors.givenName?.message}
-              />
-              <TextField
-                {...register('familyName')}
-                label='Last Name'
-                fullWidth
-                margin='normal'
-                autoComplete='family-name'
-                error={!!errors.familyName}
-                helperText={errors.familyName?.message}
-              />
-            </Box>
-            <TextField
-              {...register('email')}
-              label='Email'
-              type='email'
-              fullWidth
-              margin='normal'
-              autoComplete='email'
-              error={!!errors.email}
-              helperText={errors.email?.message}
-            />
-            <TextField
-              {...register('password')}
-              label='Password'
-              type='password'
-              fullWidth
-              margin='normal'
-              autoComplete='new-password'
-              error={!!errors.password}
-              helperText={errors.password?.message}
-            />
-            <TextField
-              {...register('confirmPassword')}
-              label='Confirm Password'
-              type='password'
-              fullWidth
-              margin='normal'
-              autoComplete='new-password'
-              error={!!errors.confirmPassword}
-              helperText={errors.confirmPassword?.message}
-            />
-            <Button
-              type='submit'
-              variant='contained'
-              fullWidth
-              size='large'
-              disabled={isSubmitting}
-              sx={{ mt: 2, mb: 2 }}
-            >
-              {isSubmitting ? 'Creating account…' : 'Create Account'}
-            </Button>
-          </Box>
-
-          <Box sx={{ textAlign: 'center', mt: 1 }}>
-            <Link href='/auth/login' passHref legacyBehavior>
-              <Typography
-                component='a'
-                variant='body2'
-                color='primary'
-                sx={{ cursor: 'pointer' }}
-              >
-                Already have an account? Sign in
-              </Typography>
-            </Link>
-          </Box>
-        </Paper>
-      </Container>
-    </>
+    <AuthCard
+      title={t('register.title')}
+      subtitle={t('register.subtitle')}
+      error={error}
+      footer={
+        <>
+          {t('register.haveAccount')}{' '}
+          <Link component={NextLink} href='/auth/login'>
+            {t('register.login')}
+          </Link>
+        </>
+      }
+    >
+      <Stack component='form' spacing={2} onSubmit={onSubmit} noValidate>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          {field('givenName', t('fields.givenName'), {
+            autoComplete: 'given-name',
+          })}
+          {field('familyName', t('fields.familyName'), {
+            autoComplete: 'family-name',
+          })}
+        </Stack>
+        {field('email', t('fields.email'), {
+          type: 'email',
+          autoComplete: 'email',
+          inputMode: 'email',
+          required: true,
+        })}
+        {field('password', t('fields.password'), {
+          type: 'password',
+          autoComplete: 'new-password',
+          required: true,
+          ...(fieldErrors.password
+            ? {}
+            : { helperText: t('validation.passwordRules') }),
+        })}
+        {field('confirmPassword', t('fields.confirmPassword'), {
+          type: 'password',
+          autoComplete: 'new-password',
+          required: true,
+        })}
+        <Button
+          type='submit'
+          variant='contained'
+          size='large'
+          disabled={submitting}
+        >
+          {submitting ? t('register.submitting') : t('register.submit')}
+        </Button>
+      </Stack>
+    </AuthCard>
   );
 }

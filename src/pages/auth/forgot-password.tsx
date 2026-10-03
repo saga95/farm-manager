@@ -1,215 +1,149 @@
-import { useState } from 'react';
-import Head from 'next/head';
-import Link from 'next/link';
-import {
-  Alert,
-  Box,
-  Button,
-  Container,
-  Paper,
-  TextField,
-  Typography,
-} from '@mui/material';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { type FormEvent, useState } from 'react';
+import NextLink from 'next/link';
+import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 import { confirmResetPassword, resetPassword } from 'aws-amplify/auth';
+import Button from '@mui/material/Button';
+import Link from '@mui/material/Link';
+import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
+import { AuthCard } from '@/components/ui/AuthCard/AuthCard';
+import { PASSWORD_PATTERN, codeSchema } from '@/features/tenant/authSchemas';
 
-const requestSchema = z.object({
-  email: z.string().email('Enter a valid email'),
-});
-
-const resetSchema = z.object({
-  email: z.string().email('Enter a valid email'),
-  code: z.string().min(6, 'Enter the 6-digit code'),
-  newPassword: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Must contain an uppercase letter')
-    .regex(/[a-z]/, 'Must contain a lowercase letter')
-    .regex(/[0-9]/, 'Must contain a number')
-    .regex(/[^A-Za-z0-9]/, 'Must contain a special character'),
-});
-
-type RequestFormData = z.infer<typeof requestSchema>;
-type ResetFormData = z.infer<typeof resetSchema>;
-
-/**
- * Forgot password page — request reset code then set new password.
- * Pattern from uwu-sri-lanka/website.
- */
+/** Password recovery: request a code, then set a new password. */
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation('auth');
+  const router = useRouter();
   const [step, setStep] = useState<'request' | 'reset'>('request');
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
+  const [fieldError, setFieldError] = useState<{
+    field: string;
+    message: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Step 1: Request reset code
-  const requestForm = useForm<RequestFormData>({
-    resolver: zodResolver(requestSchema),
-  });
-
-  const onRequestSubmit = async (data: RequestFormData) => {
+  const request = async (e: FormEvent) => {
+    e.preventDefault();
     setError(null);
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setFieldError({ field: 'email', message: t('validation.email') });
+      return;
+    }
+    setFieldError(null);
+    setSubmitting(true);
     try {
-      await resetPassword({ username: data.email });
-      setEmail(data.email);
+      await resetPassword({ username: email.trim() });
       setStep('reset');
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to send reset code.'
-      );
+    } catch {
+      setError(t('forgot.failed'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  // Step 2: Confirm new password
-  const resetForm = useForm<ResetFormData>({
-    resolver: zodResolver(resetSchema),
-    defaultValues: { email },
-  });
-
-  const onResetSubmit = async (data: ResetFormData) => {
+  const reset = async (e: FormEvent) => {
+    e.preventDefault();
     setError(null);
+    const parsedCode = codeSchema({ code: t('validation.code') }).safeParse(
+      code
+    );
+    if (!parsedCode.success) {
+      setFieldError({ field: 'code', message: t('validation.code') });
+      return;
+    }
+    if (!PASSWORD_PATTERN.test(password)) {
+      setFieldError({
+        field: 'password',
+        message: t('validation.passwordRules'),
+      });
+      return;
+    }
+    setFieldError(null);
+    setSubmitting(true);
     try {
       await confirmResetPassword({
-        username: data.email,
-        confirmationCode: data.code,
-        newPassword: data.newPassword,
+        username: email.trim(),
+        confirmationCode: parsedCode.data,
+        newPassword: password,
       });
-      setSuccess(true);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to reset password.'
-      );
+      await router.push({ pathname: '/auth/login', query: { reset: '1' } });
+    } catch {
+      setError(t('forgot.failed'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  const err = (f: string) =>
+    fieldError?.field === f ? fieldError.message : undefined;
+
   return (
-    <>
-      <Head>
-        <title>Forgot Password</title>
-      </Head>
-      <Container maxWidth='sm' sx={{ py: 8 }}>
-        <Paper sx={{ p: 4 }}>
-          <Typography variant='h4' component='h1' align='center' gutterBottom>
-            {step === 'request' ? 'Forgot Password' : 'Reset Password'}
-          </Typography>
-
-          {success && (
-            <Alert severity='success' sx={{ mb: 2 }}>
-              Password reset successfully!{' '}
-              <Link href='/auth/login'>Sign in</Link>
-            </Alert>
-          )}
-
-          {error && (
-            <Alert severity='error' sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          {step === 'request' && !success && (
-            <Box
-              component='form'
-              onSubmit={requestForm.handleSubmit(onRequestSubmit)}
-              noValidate
-            >
-              <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
-                Enter your email and we&apos;ll send you a verification code to
-                reset your password.
-              </Typography>
-              <TextField
-                {...requestForm.register('email')}
-                label='Email'
-                type='email'
-                fullWidth
-                margin='normal'
-                autoComplete='email'
-                error={!!requestForm.formState.errors.email}
-                helperText={requestForm.formState.errors.email?.message}
-              />
-              <Button
-                type='submit'
-                variant='contained'
-                fullWidth
-                size='large'
-                disabled={requestForm.formState.isSubmitting}
-                sx={{ mt: 2, mb: 2 }}
-              >
-                {requestForm.formState.isSubmitting
-                  ? 'Sending…'
-                  : 'Send Reset Code'}
-              </Button>
-            </Box>
-          )}
-
-          {step === 'reset' && !success && (
-            <Box
-              component='form'
-              onSubmit={resetForm.handleSubmit(onResetSubmit)}
-              noValidate
-            >
-              <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
-                Enter the code sent to <strong>{email}</strong> and your new
-                password.
-              </Typography>
-              <TextField
-                {...resetForm.register('email')}
-                label='Email'
-                type='email'
-                fullWidth
-                margin='normal'
-                disabled
-              />
-              <TextField
-                {...resetForm.register('code')}
-                label='Verification Code'
-                fullWidth
-                margin='normal'
-                autoComplete='one-time-code'
-                inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-                error={!!resetForm.formState.errors.code}
-                helperText={resetForm.formState.errors.code?.message}
-              />
-              <TextField
-                {...resetForm.register('newPassword')}
-                label='New Password'
-                type='password'
-                fullWidth
-                margin='normal'
-                autoComplete='new-password'
-                error={!!resetForm.formState.errors.newPassword}
-                helperText={resetForm.formState.errors.newPassword?.message}
-              />
-              <Button
-                type='submit'
-                variant='contained'
-                fullWidth
-                size='large'
-                disabled={resetForm.formState.isSubmitting}
-                sx={{ mt: 2, mb: 2 }}
-              >
-                {resetForm.formState.isSubmitting
-                  ? 'Resetting…'
-                  : 'Reset Password'}
-              </Button>
-            </Box>
-          )}
-
-          <Box sx={{ textAlign: 'center', mt: 1 }}>
-            <Link href='/auth/login' passHref legacyBehavior>
-              <Typography
-                component='a'
-                variant='body2'
-                color='primary'
-                sx={{ cursor: 'pointer' }}
-              >
-                Back to sign in
-              </Typography>
-            </Link>
-          </Box>
-        </Paper>
-      </Container>
-    </>
+    <AuthCard
+      title={t('forgot.title')}
+      subtitle={t('forgot.subtitle')}
+      error={error}
+      footer={
+        <Link component={NextLink} href='/auth/login'>
+          {t('forgot.backToLogin')}
+        </Link>
+      }
+    >
+      {step === 'request' ? (
+        <Stack component='form' spacing={2} onSubmit={request} noValidate>
+          <TextField
+            label={t('fields.email')}
+            type='email'
+            autoComplete='email'
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            error={Boolean(err('email'))}
+            helperText={err('email')}
+            required
+          />
+          <Button
+            type='submit'
+            variant='contained'
+            size='large'
+            disabled={submitting}
+          >
+            {submitting ? t('forgot.sending') : t('forgot.sendCode')}
+          </Button>
+        </Stack>
+      ) : (
+        <Stack component='form' spacing={2} onSubmit={reset} noValidate>
+          <TextField
+            label={t('fields.code')}
+            inputMode='numeric'
+            autoComplete='one-time-code'
+            value={code}
+            onChange={e => setCode(e.target.value)}
+            error={Boolean(err('code'))}
+            helperText={err('code')}
+            required
+          />
+          <TextField
+            label={t('fields.newPassword')}
+            type='password'
+            autoComplete='new-password'
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            error={Boolean(err('password'))}
+            helperText={err('password') ?? t('validation.passwordRules')}
+            required
+          />
+          <Button
+            type='submit'
+            variant='contained'
+            size='large'
+            disabled={submitting}
+          >
+            {submitting ? t('forgot.resetting') : t('forgot.reset')}
+          </Button>
+        </Stack>
+      )}
+    </AuthCard>
   );
 }

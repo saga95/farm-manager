@@ -162,6 +162,12 @@ export const tokens = {
     none: 'none',
   },
 
+  // ─── CONTAINER SIZES ────────────────────────────────────────────
+  sizes: {
+    cardNarrow: '28rem', // 448px: sign-in, sign-up, recovery
+    cardWide: '40rem', // 640px: multi-section forms (setup)
+  },
+
   // ─── BREAKPOINTS ────────────────────────────────────────────────
   breakpoints: {
     xs: '320px',
