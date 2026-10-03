@@ -169,6 +169,9 @@ devDependencies:
   conventional-changelog-conventionalcommits:
     specifier: ^10.4.0
     version: 10.4.0
+  esbuild:
+    specifier: ^0.25
+    version: 0.25.12
   eslint:
     specifier: ^8.57.1
     version: 8.57.1
