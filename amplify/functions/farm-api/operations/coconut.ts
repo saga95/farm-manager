@@ -77,7 +77,7 @@ function treeRecord(
   status: TreeStatus,
   extra: Item
 ) {
-  const tenantId = ctx.access.tenantId;
+  const { tenantId } = ctx.access;
   return {
     ...keys.tree(tenantId, farmId, treeCode),
     ...keys.treeByStatus(tenantId, farmId, status, treeCode),
@@ -224,7 +224,7 @@ export const bulkCreateTrees = tenantOperation({
     }
 
     const TableName = tableName();
-    const tenantId = ctx.access.tenantId;
+    const { tenantId } = ctx.access;
 
     // Which codes already exist (AC-CN-002: duplicates reported, not created)
     const existing = new Set<string>();
