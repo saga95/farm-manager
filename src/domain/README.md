@@ -16,12 +16,12 @@ Pure TypeScript business rules from the SRS. They must be reusable by:
 
 ## Expected modules
 
-| Module | SRS | Examples |
-| --- | --- | --- |
-| `tenant/` | §4, PR-003 | role → permission checks |
-| `coconut/` | §7 | tree code generation / validation |
-| `plucking/` | §8, CALC-001..003 | round totals, tree yield summary |
-| `samples/` | §9, CALC-008/009 | size history & distribution |
-| `prediction/` | §10, §41.8 | median interval, window, confidence |
-| `inventory/` | §11, §41.9 | balance by state, dehusking conservation |
-| `sales/` | §13, CALC-011..014 | line amounts, calculated vs actual |
+| Module        | SRS                | Examples                                 |
+| ------------- | ------------------ | ---------------------------------------- |
+| `tenant/`     | §4, PR-003         | role → permission checks                 |
+| `coconut/`    | §7                 | tree code generation / validation        |
+| `plucking/`   | §8, CALC-001..003  | round totals, tree yield summary         |
+| `samples/`    | §9, CALC-008/009   | size history & distribution              |
+| `prediction/` | §10, §41.8         | median interval, window, confidence      |
+| `inventory/`  | §11, §41.9         | balance by state, dehusking conservation |
+| `sales/`      | §13, CALC-011..014 | line amounts, calculated vs actual       |
