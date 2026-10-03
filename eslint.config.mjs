@@ -152,6 +152,39 @@ const eslintConfig = [
       },
     },
   },
+  // Domain layer must stay framework-free so the web app, Amplify functions and
+  // the future mobile client can share it (SRS PR-010, §26.2).
+  {
+    files: ['src/domain/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                'react',
+                'react-dom',
+                'next',
+                'next/*',
+                '@mui/*',
+                '@emotion/*',
+                'aws-amplify',
+                'aws-amplify/*',
+                '@aws-amplify/*',
+                '@tanstack/*',
+                '@/components/*',
+                '@/features/*',
+                '@/pages/*',
+              ],
+              message:
+                'src/domain must stay pure and framework-free (see src/domain/README.md).',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
 
 export default eslintConfig;
