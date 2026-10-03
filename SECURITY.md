@@ -22,7 +22,7 @@ If you discover a security vulnerability in this template or any project built w
 
 This template follows security best practices:
 
-- **Content Security Policy (CSP)** headers configured in `netlify.toml` and `next.config.mjs`
+- **Content Security Policy (CSP)** headers configured in `next.config.mjs`
 - **Strict TypeScript** — no `any` types, strict null checks, preventing type-related vulnerabilities
 - **Input validation** — Zod schemas for runtime type validation at system boundaries
 - **Environment variable isolation** — `src/lib/env.ts` prevents direct `process.env` access

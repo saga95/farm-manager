@@ -3,38 +3,25 @@
  */
 
 /**
- * Get the current environment
+ * Get the current environment.
+ *
+ * The project has exactly two environments, both on AWS Amplify
+ * (see docs/ENVIRONMENTS_AND_RELEASES.md):
+ *   `main` branch        → production
+ *   `development` branch → development
+ *
+ * Detection uses the Amplify branch (exposed at build time as
+ * NEXT_PUBLIC_AWS_BRANCH by amplify.yml) because NODE_ENV is `production`
+ * for every deployed build, including dev.
  */
-export const getEnvironment = (): 'development' | 'staging' | 'production' => {
-  // Vercel-specific environment detection
-  if (process.env['NEXT_PUBLIC_VERCEL_ENV'] === 'production') {
-    return 'production'
-  }
-  
-  if (process.env['NEXT_PUBLIC_VERCEL_ENV'] === 'preview') {
-    return 'staging'
+export const getEnvironment = (): 'development' | 'production' => {
+  const branch = process.env['NEXT_PUBLIC_AWS_BRANCH']
+
+  if (branch) {
+    return branch === 'main' ? 'production' : 'development'
   }
 
-  // Netlify-specific environment detection
-  if (process.env['NEXT_PUBLIC_NETLIFY_ENV'] === 'production') {
-    return 'production'
-  }
-  
-  if (process.env['NEXT_PUBLIC_NETLIFY_ENV'] === 'preview' || 
-      process.env['NEXT_PUBLIC_NETLIFY_ENV'] === 'deploy-preview') {
-    return 'staging'
-  }
-
-  // AWS Amplify environment detection
-  if (process.env['NEXT_PUBLIC_AWS_BRANCH'] === 'main') {
-    return 'production'
-  }
-  
-  if (process.env['NEXT_PUBLIC_AWS_BRANCH'] === 'staging') {
-    return 'staging'
-  }
-
-  // Default to NODE_ENV or development
+  // Local machine: `next start` after `next build` behaves like production
   if (process.env['NODE_ENV'] === 'production') {
     return 'production'
   }
@@ -47,13 +34,6 @@ export const getEnvironment = (): 'development' | 'staging' | 'production' => {
  */
 export const isDevelopment = (): boolean => {
   return getEnvironment() === 'development'
-}
-
-/**
- * Check if running in staging
- */
-export const isStaging = (): boolean => {
-  return getEnvironment() === 'staging'
 }
 
 /**
@@ -116,7 +96,7 @@ export const getRequiredEnvVar = (key: string): string => {
  */
 export const config = {
   app: {
-    name: getEnvVar('NEXT_PUBLIC_APP_NAME', 'My Next Template'),
+    name: getEnvVar('NEXT_PUBLIC_APP_NAME', 'My Smart Need AgriTech'),
     url: getEnvVar('NEXT_PUBLIC_APP_URL', 'http://localhost:3000'),
   },
   
@@ -151,7 +131,6 @@ export const config = {
   
   environment: getEnvironment(),
   isDevelopment: isDevelopment(),
-  isStaging: isStaging(),
   isProduction: isProduction(),
   isClient: isClient(),
   isServer: isServer(),

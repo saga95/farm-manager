@@ -30,13 +30,15 @@ Add new routes by extending the `routes` map in `amplify/api/handler.ts`.
 
 ## Local development
 
+We don't use sandboxes (see `docs/ENVIRONMENTS_AND_RELEASES.md`). Local
+development talks to the live **dev** backend:
+
 ```bash
-npx ampx sandbox
+AMPLIFY_APP_ID=<id> pnpm amplify:outputs:dev
 ```
 
-The sandbox prints the HTTP API endpoint, e.g.
-`https://abc123.execute-api.us-east-1.amazonaws.com/`. No custom domain is
-attached in sandbox mode unless you set the env vars below.
+The HTTP API endpoint, e.g. `https://abc123.execute-api.us-east-1.amazonaws.com/`,
+appears under `custom.api.url` in `amplify_outputs.json`.
 
 ## Enabling `api.<your-domain>` in deployed environments
 

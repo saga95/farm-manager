@@ -18,6 +18,8 @@ frontend:
         # grep exits 1 when no NEXT_PUBLIC_* vars are set — a valid state that
         # must not abort the build under `set -e`.
         - (env | grep -e NEXT_PUBLIC_ >> .env.production) || true
+        # Expose the Amplify branch so src/lib/env.ts can tell dev (development) from prod (main).
+        - echo "NEXT_PUBLIC_AWS_BRANCH=$AWS_BRANCH" >> .env.production
         - pnpm run build
   artifacts:
     baseDirectory: .next

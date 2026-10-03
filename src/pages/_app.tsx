@@ -25,7 +25,7 @@ function AmplifyProvider({ children }: { children: React.ReactNode }) {
         const outputs = await import('../../amplify_outputs.json');
         Amplify.configure(outputs.default);
       } catch {
-        // In development without sandbox, continue without Amplify
+        // In development without amplify_outputs.json, continue without Amplify
         console.warn(
           'Amplify outputs not found. Running without backend configuration.'
         );
