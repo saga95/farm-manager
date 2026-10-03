@@ -1,94 +1,60 @@
 import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
+import { farmApi } from '../functions/farm-api/resource';
 
 /**
- * Data schema using AWS AppSync (GraphQL) + DynamoDB.
- * Pattern from politica, friday.lk, tmsaaokenki-dev/website, and uwu-sri-lanka/website.
+ * Farm Manager API (ADR-0001, ADR-0002).
  *
- * Reference models for an ecommerce domain.
- * Replace / extend these for your specific use-case.
- *
- * Authorization rules:
- * - Public reads via API key (storefront)
- * - Authenticated reads for all logged-in users
- * - Owner-based writes for user resources (orders, reviews)
- * - Group-based writes for admin resources (products, categories)
- *
- * @see https://docs.amplify.aws/gen2/build-a-backend/data/
+ * Business data is NOT exposed as Amplify models. Every field is a custom
+ * operation backed by the `farm-api` Lambda, which authorizes the caller
+ * against tenant-scoped RBAC and reads/writes the single `FarmData` table.
+ * Cognito user pool is the only auth mode (no public API key).
  */
 const schema = a.schema({
-  // ─── Category ───────────────────────────────────────────────────────────
-  Category: a
-    .model({
-      name: a.string().required(),
-      slug: a.string().required(),
-      description: a.string(),
-      image: a.string(),
-      parentId: a.string(),
-      sortOrder: a.integer().default(0),
-    })
-    .authorization(allow => [
-      allow.publicApiKey().to(['read']),
-      allow.authenticated().to(['read']),
-      allow.group('Admin').to(['create', 'update', 'delete']),
-    ]),
+  TenantMembership: a.customType({
+    tenantId: a.id().required(),
+    tenantName: a.string().required(),
+    profileId: a.string().required(),
+    profileName: a.string().required(),
+    entitlements: a.string().required().array().required(),
+  }),
 
-  // ─── Product ────────────────────────────────────────────────────────────
-  Product: a
-    .model({
-      name: a.string().required(),
-      slug: a.string().required(),
-      description: a.string(),
-      price: a.float().required(),
-      compareAtPrice: a.float(),
-      currency: a.string().default('USD'),
-      images: a.string().array(),
-      categoryId: a.string(),
-      status: a.enum(['ACTIVE', 'INACTIVE', 'ARCHIVED']),
-      inventory: a.integer().default(0),
-      sku: a.string(),
-    })
-    .authorization(allow => [
-      allow.publicApiKey().to(['read']),
-      allow.authenticated().to(['read']),
-      allow.group('Admin').to(['create', 'update', 'delete']),
-    ]),
+  Me: a.customType({
+    userId: a.id().required(),
+    email: a.string(),
+    memberships: a.ref('TenantMembership').required().array().required(),
+  }),
 
-  // ─── Order ──────────────────────────────────────────────────────────────
-  Order: a
-    .model({
-      userId: a.string().required(),
-      items: a.json().required(),
-      subtotal: a.float().required(),
-      tax: a.float().default(0),
-      shipping: a.float().default(0),
-      total: a.float().required(),
-      status: a.enum([
-        'PENDING',
-        'CONFIRMED',
-        'PROCESSING',
-        'SHIPPED',
-        'DELIVERED',
-        'CANCELLED',
-      ]),
-      shippingAddress: a.json(),
-    })
-    .authorization(allow => [
-      allow.owner().to(['create', 'read']),
-      allow.group('Admin').to(['read', 'update', 'delete']),
-    ]),
+  CreateTenantResult: a.customType({
+    tenantId: a.id().required(),
+    farmId: a.id().required(),
+    replayed: a.boolean().required(),
+  }),
 
-  // ─── Contact Submission ─────────────────────────────────────────────────
-  ContactSubmission: a
-    .model({
+  /** The caller and their tenant memberships with resolved entitlements. */
+  me: a
+    .query()
+    .returns(a.ref('Me').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  /** SCR-002: create a tenant, its default roles/profiles, the caller as Owner and the first farm. */
+  createTenant: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
       name: a.string().required(),
-      email: a.string().required(),
-      subject: a.string(),
-      message: a.string().required(),
+      defaultTimezone: a.string().required(),
+      defaultCurrency: a.string().required(),
+      defaultLocale: a.string().required(),
+      farmId: a.id().required(),
+      farmName: a.string().required(),
+      farmArea: a.float(),
+      farmAreaUnit: a.string(),
+      farmLocationLabel: a.string(),
     })
-    .authorization(allow => [
-      allow.publicApiKey().to(['create']),
-      allow.group('Admin').to(['read', 'delete']),
-    ]),
+    .returns(a.ref('CreateTenantResult').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
 });
 
 export type Schema = ClientSchema<typeof schema>;
@@ -96,9 +62,6 @@ export type Schema = ClientSchema<typeof schema>;
 export const data = defineData({
   schema,
   authorizationModes: {
-    defaultAuthorizationMode: 'apiKey',
-    apiKeyAuthorizationMode: {
-      expiresInDays: 365,
-    },
+    defaultAuthorizationMode: 'userPool',
   },
 });

@@ -38,14 +38,19 @@ function createStorageMock(): Storage {
   };
 }
 
-Object.defineProperty(window, 'localStorage', {
-  value: createStorageMock(),
-  writable: true,
-});
-Object.defineProperty(window, 'sessionStorage', {
-  value: createStorageMock(),
-  writable: true,
-});
+// Browser-only mocks are skipped for `@jest-environment node` suites (e.g. Lambda handlers).
+const hasWindow = typeof window !== 'undefined';
+
+if (hasWindow)
+  Object.defineProperty(window, 'localStorage', {
+    value: createStorageMock(),
+    writable: true,
+  });
+if (hasWindow)
+  Object.defineProperty(window, 'sessionStorage', {
+    value: createStorageMock(),
+    writable: true,
+  });
 
 // Mock Next.js router
 jest.mock('next/router', () => require('next-router-mock'));
@@ -90,19 +95,20 @@ global.console = {
 };
 
 // Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-});
+if (hasWindow)
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  });
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {

@@ -9,6 +9,9 @@
     "noEmit": true,
     "paths": {
       "$amplify/*": ["../amplify/*"]
-    }
-  }
+    },
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "exclude": ["**/__tests__/**"]
 }
