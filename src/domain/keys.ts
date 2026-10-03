@@ -24,7 +24,7 @@ export interface Key {
 const userPk = (userId: string): string =>
   `U${SEP}${assertId('userId', userId)}`;
 
-export const keys = {
+export const keys: KeyBuilders = {
   tenant: (tenantId: string): Key => ({ PK: t(tenantId), SK: 'TENANT' }),
 
   member: (tenantId: string, userId: string): Key => ({
@@ -52,6 +52,20 @@ export const keys = {
     SK: `FARM${SEP}${assertId('farmId', farmId)}`,
   }),
 
+  /** Partition holding a farm's zones, spaces, trees, rounds, cycles… (ADR-0002). */
+  farmPk: (tenantId: string, farmId: string): string =>
+    `${t(tenantId)}${SEP}F${SEP}${assertId('farmId', farmId)}`,
+
+  zone: (tenantId: string, farmId: string, zoneId: string): Key => ({
+    PK: keys.farmPk(tenantId, farmId),
+    SK: `ZONE${SEP}${assertId('zoneId', zoneId)}`,
+  }),
+
+  space: (tenantId: string, farmId: string, spaceId: string): Key => ({
+    PK: keys.farmPk(tenantId, farmId),
+    SK: `SPACE${SEP}${assertId('spaceId', spaceId)}`,
+  }),
+
   /** GSI2: get any entity by id; results MUST be tenant-checked. */
   byId: (id: string) => ({ GSI2PK: `ID${SEP}${assertId('id', id)}` }),
 
@@ -70,9 +84,41 @@ export const keys = {
     roles: 'ROLE#',
     profiles: 'PROFILE#',
     farms: 'FARM#',
+    zones: 'ZONE#',
+    spaces: 'SPACE#',
   },
   tenantPk: t,
-} as const;
+};
+
+interface KeyBuilders {
+  tenant: (tenantId: string) => Key;
+  member: (tenantId: string, userId: string) => Key;
+  memberByUser: (
+    userId: string,
+    tenantId: string
+  ) => { GSI1PK: string; GSI1SK: string };
+  userPk: (userId: string) => string;
+  role: (tenantId: string, roleId: string) => Key;
+  profile: (tenantId: string, profileId: string) => Key;
+  farm: (tenantId: string, farmId: string) => Key;
+  farmPk: (tenantId: string, farmId: string) => string;
+  zone: (tenantId: string, farmId: string, zoneId: string) => Key;
+  space: (tenantId: string, farmId: string, spaceId: string) => Key;
+  byId: (id: string) => { GSI2PK: string };
+  audit: (
+    tenantId: string,
+    entityId: string,
+    at: string,
+    auditId: string
+  ) => Key;
+  prefix: Readonly<
+    Record<
+      'members' | 'roles' | 'profiles' | 'farms' | 'zones' | 'spaces',
+      string
+    >
+  >;
+  tenantPk: (tenantId: string) => string;
+}
 
 /** ULID: 26 Crockford base32 characters (ADR-0004 client-generated ids). */
 export const ULID_PATTERN = /^[0-9A-HJKMNP-TV-Z]{26}$/;
