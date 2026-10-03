@@ -5,6 +5,7 @@ import Backend from 'i18next-http-backend';
 import enAuth from '../../public/locales/en/auth.json';
 import enCommon from '../../public/locales/en/common.json';
 import enDashboard from '../../public/locales/en/dashboard.json';
+import enFarm from '../../public/locales/en/farm.json';
 import enForms from '../../public/locales/en/forms.json';
 import enNavigation from '../../public/locales/en/navigation.json';
 import enSetup from '../../public/locales/en/setup.json';
@@ -23,6 +24,7 @@ export const NAMESPACES = [
   'dashboard',
   'auth',
   'setup',
+  'farm',
 ] as const;
 
 const resources = {
@@ -34,6 +36,7 @@ const resources = {
     dashboard: enDashboard,
     auth: enAuth,
     setup: enSetup,
+    farm: enFarm,
   },
 };
 
