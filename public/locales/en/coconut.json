@@ -1,0 +1,78 @@
+{
+  "trees": {
+    "title": "Coconut trees",
+    "add": "Add tree",
+    "bulk": "Register trees",
+    "search": "Search by tree code",
+    "showInactive": "Show removed, dead and archived",
+    "empty": "No trees registered yet. Register your numbered trees to start recording harvests.",
+    "noMatch": "No trees match your search.",
+    "count_one": "{{count}} tree",
+    "count_other": "{{count}} trees",
+    "filterAll": "All"
+  },
+  "status": {
+    "PRODUCING": "Producing",
+    "NON_PRODUCING": "Not producing",
+    "YOUNG": "Young",
+    "TEMPORARILY_INACTIVE": "Temporarily inactive",
+    "DAMAGED": "Damaged",
+    "REMOVED": "Removed",
+    "DEAD": "Dead",
+    "ARCHIVED": "Archived"
+  },
+  "bulk": {
+    "title": "Register trees",
+    "intro": "Create a numbered range in one go, matching the tags on your trees. Codes that already exist are skipped, never duplicated.",
+    "prefix": "Prefix",
+    "prefixHelp": "C for coconut, e.g. C-001",
+    "start": "Start at",
+    "count": "How many",
+    "width": "Digits",
+    "status": "Status",
+    "zone": "Zone (optional)",
+    "noZone": "No zone",
+    "preview": "Preview",
+    "previewRange": "{{first}} … {{last}}",
+    "submit": "Register {{count}} trees",
+    "submitting": "Registering…",
+    "doneTitle": "Trees registered",
+    "created_one": "{{count}} tree created.",
+    "created_other": "{{count}} trees created.",
+    "skipped": "Already existed (not changed): {{codes}}",
+    "viewTrees": "View trees",
+    "again": "Register more",
+    "invalid": "Check the range: up to 500 trees at a time.",
+    "noPermission": "Your profile doesn't allow registering trees. Ask the farm owner."
+  },
+  "tree": {
+    "notFound": "This tree could not be found.",
+    "back": "All trees",
+    "edit": "Edit tree",
+    "details": "Details",
+    "code": "Tree code",
+    "codeHelp": "Matches the physical tag. It can't be changed later.",
+    "label": "Display label (optional)",
+    "zone": "Zone",
+    "variety": "Variety (optional)",
+    "plantedAt": "Planted on (optional)",
+    "locationNote": "Location note (optional)",
+    "notes": "Notes (optional)",
+    "status": "Status",
+    "notSet": "Not recorded",
+    "history": "History",
+    "noHistory": "No harvests recorded yet. This is different from a recorded harvest of zero.",
+    "duplicate": "That tree code is already used on this farm (including archived trees)."
+  },
+  "actions": {
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel"
+  },
+  "errors": {
+    "required": "This field is required",
+    "code": "Use letters, numbers and hyphens (max 20)",
+    "conflict": "Someone else changed this tree. Close the form and try again.",
+    "failed": "Couldn't save. Please try again."
+  }
+}

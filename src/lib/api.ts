@@ -254,3 +254,94 @@ export const updateSpace = async (
       ...changes,
     })
   ) as GrowingSpace;
+// ─── Coconut tree registry (#40–#45) ─────────────────────────────────────────
+
+export interface Tree {
+  id: string;
+  tenantId: string;
+  farmId: string;
+  code: string;
+  displayLabel?: string | null;
+  cropCode: string;
+  zoneId?: string | null;
+  status: string;
+  variety?: string | null;
+  plantedAt?: string | null;
+  locationNote?: string | null;
+  notes?: string | null;
+  coverPhotoId?: string | null;
+  version: number;
+  createdAt?: string | null;
+}
+
+export type TreeInput = Partial<
+  Pick<
+    Tree,
+    | 'displayLabel'
+    | 'zoneId'
+    | 'variety'
+    | 'plantedAt'
+    | 'locationNote'
+    | 'notes'
+    | 'status'
+  >
+>;
+
+export const listTrees = async (
+  tenantId: string,
+  farmId: string,
+  includeInactive = false
+) => [
+  ...(unwrap(
+    await q('listTrees')({ tenantId, farmId, includeInactive })
+  ) as Tree[]),
+];
+
+export const getTree = async (tenantId: string, treeId: string) =>
+  unwrap(await q('getTree')({ tenantId, treeId })) as Tree;
+
+export const createTree = async (
+  tenantId: string,
+  farmId: string,
+  treeId: string,
+  input: TreeInput & { code: string; status: string }
+) =>
+  unwrap(
+    await mu('createTree')({ tenantId, farmId, treeId, ...input })
+  ) as Tree;
+
+export const updateTree = async (
+  tenantId: string,
+  tree: Pick<Tree, 'farmId' | 'code' | 'version'>,
+  changes: TreeInput
+) =>
+  unwrap(
+    await mu('updateTree')({
+      tenantId,
+      farmId: tree.farmId,
+      code: tree.code,
+      expectedVersion: tree.version,
+      ...changes,
+    })
+  ) as Tree;
+
+export interface BulkCreateTreesResult {
+  created: { id: string; code: string }[];
+  skipped: string[];
+}
+
+export const bulkCreateTrees = async (
+  tenantId: string,
+  farmId: string,
+  input: {
+    prefix: string;
+    start: number;
+    count: number;
+    width: number;
+    status: string;
+    zoneId?: string | null;
+  }
+) =>
+  unwrap(
+    await mu('bulkCreateTrees')({ tenantId, farmId, ...input })
+  ) as BulkCreateTreesResult;
