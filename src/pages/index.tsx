@@ -23,7 +23,7 @@ export default function Home() {
     { icon: '♿', title: 'WCAG 2.2 AA', desc: 'Accessibility compliant' },
     { icon: '🔒', title: 'Security', desc: 'CSP, HTTPS, secure cookies' },
     { icon: '📱', title: 'Responsive', desc: 'Mobile-first design' },
-    { icon: '🚀', title: 'Deploy Ready', desc: 'Vercel, Netlify, AWS' },
+    { icon: '🚀', title: 'Deploy Ready', desc: 'AWS Amplify' },
   ];
 
   const title = `${SITE_NAME} | Production-Ready Starter`;

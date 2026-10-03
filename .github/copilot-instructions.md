@@ -1,8 +1,10 @@
-# Copilot Instructions — Next.js Enterprise Template
+# Copilot Instructions — Farm Manager (My Smart Need AgriTech)
+
+> **Baseline rule:** [docs/ENVIRONMENTS_AND_RELEASES.md](../docs/ENVIRONMENTS_AND_RELEASES.md). There are two environments only, dev (`development`) and prod (`main`), both on AWS Amplify, and each push deploys its branch. Never create staging, preview or sandbox environments; test on dev. Prod releases come from semantic-release, so Conventional Commits are required.
 
 ## Project Overview
 
-This is a **Next.js 14 enterprise template** using the **Pages Router**, **Material UI v6**, **TypeScript 5**, and **AWS Amplify Gen 2** for backend services. It is designed for rapid client project setup with multi-platform deployment (Vercel, Netlify, AWS Amplify).
+This is **My Smart Need AgriTech**, a multi-tenant, mobile-first Smart Farm & Garden Management platform, built from the Next.js 14 enterprise template using the **Pages Router**, **Material UI v6**, **TypeScript 5**, and **AWS Amplify Gen 2** for backend services. It is hosted on AWS Amplify. The same Amplify backend will also serve a future native mobile app, so business rules belong in `src/domain` / `src/features/*` and in backend resolvers, never only in pages.
 
 ## Architecture
 
@@ -44,20 +46,19 @@ This is a **Next.js 14 enterprise template** using the **Pages Router**, **Mater
 
 ## Branch Strategy
 
-- `main` → Production
-- `staging` → Staging / QA
-- `development` → Active development
-- Feature branches: `feature/description`, `fix/description`
+- `main` → **prod** (Amplify auto-deploy on push, then a semantic-release tag)
+- `development` → **dev** (Amplify auto-deploy on push; the live test environment)
+- Short-lived branches `feature/*`, `fix/*`, `chore/*` → PR into `development`
+- No `staging` branch. See `BRANCHING_STRATEGY.md`.
 
 ## Deployment
 
-- **Vercel**: Push to any branch triggers build. Config in `vercel.json`.
-- **Netlify**: Push triggers build. Config in `netlify.toml`.
-- **AWS Amplify**: Push to main triggers pipeline. Config in `amplify.yml`.
+- **AWS Amplify only.** Build config is in `amplify.yml`, and the backend deploys per branch via `ampx pipeline-deploy`.
+- GitHub Actions (`.github/workflows/ci-cd.yml`) runs quality gates and semantic-release. It never deploys.
 
 ## Environment Detection
 
-Use `src/lib/env.ts` which auto-detects Vercel, Netlify, or AWS Amplify environment. Feature flags control optional capabilities (analytics, error tracking, PWA, i18n).
+Use `src/lib/env.ts`. `getEnvironment()` returns `'development' | 'production'` based on the Amplify branch (`NEXT_PUBLIC_AWS_BRANCH`). Feature flags control optional capabilities (analytics, error tracking, PWA, i18n).
 
 ## When Creating New Pages
 
@@ -80,7 +81,7 @@ Use `src/lib/env.ts` which auto-detects Vercel, Netlify, or AWS Amplify environm
 
 1. Edit schema in `amplify/data/resource.ts`
 2. Add authorization rules for each model
-3. Run `npx ampx sandbox` to test locally
+3. Push to `development` (via PR) and test on the live dev backend. Do not use `ampx sandbox`.
 4. Create React Query hooks for data fetching
 
 ## UX / Design Work — Adopt the "Aria" Persona

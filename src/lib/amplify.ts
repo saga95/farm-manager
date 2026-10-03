@@ -5,7 +5,7 @@ import { Amplify, type ResourcesConfig } from 'aws-amplify';
  * Pattern from tmsaaokenki-dev/website and friday.lk.
  *
  * amplify_outputs.json is generated during build/deploy by Amplify.
- * In development without sandbox, the app continues without backend.
+ * In development without amplify_outputs.json, the app continues without backend.
  */
 
 let amplifyConfig: ResourcesConfig | null = null;
@@ -31,7 +31,7 @@ export const configureAmplify = async (): Promise<boolean> => {
   } catch {
     console.warn(
       'Amplify outputs not found. Running without backend configuration.',
-      'Run `npx ampx sandbox` to generate amplify_outputs.json.'
+      'Run `pnpm amplify:outputs:dev` to fetch the dev backend amplify_outputs.json.'
     );
     isConfigured = true; // Don't retry
     return false;

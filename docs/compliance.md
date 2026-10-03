@@ -24,7 +24,7 @@ This document maps the template's features to the [ISO/IEC 25010:2023](https://w
 
 | Sub-characteristic   | Implementation                                                                                          | Evidence                                                       |
 | -------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| **Co-existence**     | Multi-platform deployment (Vercel, Netlify, AWS Amplify) from same codebase, environment auto-detection | `src/lib/env.ts`, `vercel.json`, `netlify.toml`, `amplify.yml` |
+| **Co-existence**     | Single AWS Amplify backend shared by web/PWA and the future mobile app, environment auto-detection | `src/lib/env.ts`, `vercel.json`, `netlify.toml`, `amplify.yml` |
 | **Interoperability** | REST API routes, GraphQL via AppSync, EmailJS integration, standard JSON-LD structured data             | `src/pages/api/`, `amplify/data/resource.ts`, `src/lib/seo.ts` |
 
 ## 4. Usability
@@ -42,7 +42,7 @@ This document maps the template's features to the [ISO/IEC 25010:2023](https://w
 | Sub-characteristic  | Implementation                                                                                                      | Evidence                                                 |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | **Maturity**        | 70% test coverage threshold, CI/CD pipeline (lint → test → build), pre-commit hooks                                 | `jest.config.js`, `.github/workflows/ci-cd.yml`          |
-| **Availability**    | Multi-region deployment support (Vercel/Netlify edge, Amplify), static generation for critical pages                | Deployment configs                                       |
+| **Availability**    | AWS Amplify Hosting (CloudFront CDN), static generation for critical pages                | Deployment configs                                       |
 | **Fault tolerance** | ErrorBoundary component, React Query retry policies (3 retries with exponential backoff), graceful Amplify fallback | `src/components/ErrorBoundary.tsx`, `src/pages/_app.tsx` |
 | **Recoverability**  | ErrorBoundary "Try again" recovery, React Query automatic refetch on reconnect/focus                                | `_app.tsx` QueryClient config                            |
 
@@ -70,7 +70,7 @@ This document maps the template's features to the [ISO/IEC 25010:2023](https://w
 
 | Sub-characteristic | Implementation                                                                                           | Evidence                                               |
 | ------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| **Adaptability**   | Environment auto-detection (Vercel/Netlify/Amplify), feature flags via env vars, responsive design       | `src/lib/env.ts`                                       |
+| **Adaptability**   | Environment detection via Amplify branch (dev/prod), feature flags via env vars, responsive design       | `src/lib/env.ts`                                       |
 | **Installability** | One-command bootstrap (`./scripts/bootstrap.sh`), `--ci` flag for automated environments                 | `scripts/bootstrap.sh`                                 |
 | **Replaceability** | Repository pattern allows data source swapping without UI changes, theme abstraction for brand switching | `src/features/todos/repository.ts`, `src/lib/theme.ts` |
 
@@ -86,7 +86,7 @@ While full ISO 27001 certification requires organizational controls beyond code,
 | **A.8.26 — Application security requirements** | TypeScript strict mode, Zod validation, CSP/HSTS headers                            |
 | **A.8.28 — Secure coding**                     | ESLint with security rules, no `any` types, environment variable isolation          |
 | **A.8.29 — Security testing**                  | Jest unit tests, Playwright E2E, coverage thresholds                                |
-| **A.8.31 — Separation of environments**        | Branch-based deployment (main/staging/development), platform-specific env configs   |
+| **A.8.31 — Separation of environments**        | Two Amplify environments (development → dev, main → prod), platform-specific env configs   |
 | **A.8.9 — Configuration management**           | `.env.example` template, `src/lib/env.ts` centralized access, AGENTS.md conventions |
 
 ---

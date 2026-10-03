@@ -1,4 +1,9 @@
-# Agent Configuration — Next.js Enterprise Template
+# Agent Configuration — Farm Manager (My Smart Need AgriTech)
+
+> **Baseline rule for every agent and contributor:** [docs/ENVIRONMENTS_AND_RELEASES.md](docs/ENVIRONMENTS_AND_RELEASES.md).
+> There are two environments only, **dev** (`development`) and **prod** (`main`), both on AWS Amplify, and each push deploys its branch.
+> Never create environments for testing (no staging, previews or sandboxes); test on dev.
+> Prod releases come from semantic-release, so commits must follow Conventional Commits.
 
 ## Available Agents
 
@@ -38,21 +43,15 @@ Below are role-based instruction sets that agents (human or AI) can follow when 
 
 ---
 
-## 🚀 Setup Agent (for new project initialization)
+## 🚀 Setup Agent (for a new contributor machine)
 
-**Goal**: Get a new project from template to deployed in minimum time.
+1. `git clone https://github.com/saga95/farm-manager.git && cd farm-manager`
+2. `nvm use && pnpm install` (or `pnpm bootstrap`)
+3. `cp .env.example .env.local` and fill in local values
+4. Point the local app at the live dev backend: `AMPLIFY_APP_ID=<id> pnpm amplify:outputs:dev`
+5. Verify: `pnpm dev`, `pnpm lint`, `pnpm test`, `pnpm build`
 
-**Steps**:
-
-1. Clone the template: `git clone <template-url> <project-name>`
-2. Run bootstrap: `npm run bootstrap` (or `bash scripts/bootstrap.sh`)
-3. Update `package.json` with project name and description
-4. Update `.env.local` with project-specific values
-5. Update `public/manifest.json` with app name, colors, icons
-6. Update `src/lib/seo.ts` SITE_URL and SITE_NAME
-7. Choose deployment target (Vercel/Netlify/Amplify) and configure
-8. If using Amplify backend: `npx ampx sandbox` to start local backend
-9. Verify: `npm run dev`, `npm run lint`, `npm run test`, `npm run build`
+Do **not** run `ampx sandbox` or create any other environment.
 
 ---
 
@@ -62,7 +61,7 @@ Below are role-based instruction sets that agents (human or AI) can follow when 
 
 **Steps**:
 
-1. Create feature branch: `git checkout -b feature/<name>`
+1. Create feature branch from `development`: `git checkout -b feature/<issue>-<name>`
 2. Define types in `src/types/index.ts` if needed
 3. Create/update data models in `amplify/data/resource.ts` if needed
 4. Create React Query hooks for data fetching
@@ -71,7 +70,7 @@ Below are role-based instruction sets that agents (human or AI) can follow when 
 7. Add SEO metadata using `src/lib/seo.ts` helpers
 8. Write tests (components, hooks, utilities)
 9. Run quality checks: `npm run lint && npm run type-check && npm run test`
-10. Submit PR to `development` branch
+10. Submit PR to `development` with a Conventional Commit title and `Closes #<issue>`
 
 ---
 
@@ -118,16 +117,11 @@ Below are role-based instruction sets that agents (human or AI) can follow when 
 
 ---
 
-## 🚢 Deploy Agent (for deployment tasks)
+## 🚢 Deploy / Release Agent
 
-**Steps**:
+Deployment is **push-to-deploy on AWS Amplify**. There are no manual deploy scripts.
 
-1. Ensure all checks pass (lint, types, tests, build)
-2. Choose platform:
-   - **Vercel**: `bash scripts/deploy-vercel.sh`
-   - **Netlify**: `bash scripts/deploy-netlify.sh`
-   - **Amplify**: Push to main for auto-deploy
-3. Set environment variables on the platform
-4. Verify deployment URL loads correctly
-5. Run smoke tests on deployed URL
-6. Verify SEO (structured data, meta tags, sitemap)
+1. **dev:** merge the PR into `development`. Amplify builds the frontend and backend for dev. Smoke-test on dev.
+2. **prod:** open a PR from `development` to `main` and merge it with a **merge commit**. Amplify deploys prod.
+3. The CI `Release` job runs semantic-release, which creates the `vX.Y.Z` tag and GitHub Release notes. Never tag or edit versions by hand.
+4. Check that `/api/health` returns 200 on the deployed URL.

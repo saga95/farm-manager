@@ -129,49 +129,7 @@ else
   warn "No .husky directory found — skipping Git hooks"
 fi
 
-# ─── Step 5: Create branches (interactive only) ──────────────────────────────
-
-if [[ "$CI_MODE" == false ]]; then
-  echo ""
-  info "Checking branch structure..."
-
-  CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
-
-  for BRANCH in development staging; do
-    if git rev-parse --verify "$BRANCH" &>/dev/null; then
-      success "Branch '$BRANCH' exists"
-    else
-      read -p "  Create '$BRANCH' branch from main? (y/N): " -n 1 -r
-      echo
-      if [[ $REPLY =~ ^[Yy]$ ]]; then
-        git checkout main 2>/dev/null || true
-        git checkout -b "$BRANCH"
-        success "Created branch '$BRANCH'"
-      fi
-    fi
-  done
-
-  # Return to original branch
-  git checkout "$CURRENT_BRANCH" 2>/dev/null || true
-fi
-
-# ─── Step 6: Amplify sandbox (interactive only) ──────────────────────────────
-
-if [[ "$CI_MODE" == false && -d amplify ]]; then
-  echo ""
-  read -p "$(echo -e "${BLUE}[INFO]${NC} Start Amplify sandbox? (y/N): ")" -n 1 -r
-  echo
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    if command -v npx &> /dev/null; then
-      info "Starting Amplify sandbox (Ctrl+C to stop)..."
-      npx ampx sandbox
-    else
-      warn "npx not found — run 'npx ampx sandbox' manually"
-    fi
-  fi
-fi
-
-# ─── Step 7: Validate setup ──────────────────────────────────────────────────
+# ─── Step 5: Validate setup ──────────────────────────────────────────────────
 
 echo ""
 info "Validating setup..."
@@ -209,15 +167,14 @@ echo "    $PKG_MGR run lint         — Lint code"
 echo ""
 
 if [[ -d amplify ]]; then
-  echo "  Amplify:"
-  echo "    npx ampx sandbox         — Start local backend"
-  echo "    npx ampx sandbox delete  — Clean up sandbox"
+  echo "  Amplify (no sandboxes — local dev talks to the live dev backend):"
+  echo "    AMPLIFY_APP_ID=<id> $PKG_MGR run amplify:outputs:dev"
   echo ""
 fi
 
-echo "  Deployment:"
-echo "    git push origin main       — Deploy to production"
-echo "    git push origin staging    — Deploy to staging"
+echo "  Deployment (Amplify, on push — see docs/ENVIRONMENTS_AND_RELEASES.md):"
+echo "    development  → dev"
+echo "    main         → prod (semantic-release tags the version)"
 echo ""
 
 if (( ERRORS > 0 )); then

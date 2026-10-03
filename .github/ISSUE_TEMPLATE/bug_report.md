@@ -34,7 +34,7 @@ If applicable, add screenshots to help explain.
 - **OS**: [e.g. macOS 14, Windows 11, Ubuntu 22.04]
 - **Browser**: [e.g. Chrome 120, Firefox 121]
 - **Node.js**: [e.g. 20.10.0]
-- **Deployment**: [e.g. Vercel, Netlify, AWS Amplify, Local]
+- **Environment**: [dev, prod, local]
 
 ## Additional Context
 

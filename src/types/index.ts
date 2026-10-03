@@ -293,7 +293,7 @@ export interface AppConfig {
     version: string;
     description: string;
     url: string;
-    environment: 'development' | 'staging' | 'production';
+    environment: 'development' | 'production';
   };
   api: {
     baseUrl: string;
