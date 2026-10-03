@@ -6,33 +6,31 @@ import { postConfirmation } from './post-confirmation/resource';
  * Pattern from politica, friday.lk, tmsaaokenki-dev/website, and uwu-sri-lanka/website.
  *
  * Features:
- * - Email + phone login
+ * - Email login only (no phone / SMS)
  * - User groups for RBAC (Admin, Shopper)
  * - Post-confirmation Lambda to assign default group
- * - Optional MFA (TOTP + SMS)
- * - Custom user attributes (given name, family name, phone)
+ * - Optional MFA (authenticator app / TOTP)
+ * - User attributes: given name, family name
  *
  * Customize login methods and user attributes as needed.
  */
 export const auth = defineAuth({
   loginWith: {
+    // Email only (PO decision 2026-10-03): no phone sign-in and no SMS costs.
     email: {
       verificationEmailStyle: 'CODE',
-      verificationEmailSubject: 'Your verification code',
+      verificationEmailSubject:
+        'My Smart Need AgriTech: your verification code',
     },
-    phone: true,
   },
   userAttributes: {
     givenName: { required: false, mutable: true },
     familyName: { required: false, mutable: true },
-    phoneNumber: { required: false, mutable: true },
   },
+  // Optional authenticator-app MFA only; SMS is off to avoid per-message costs.
   multifactor: {
     mode: 'OPTIONAL',
     totp: true,
-    // Cognito rejects the User Pool when phone login is enabled without SMS MFA,
-    // so SMS must stay on for as long as `loginWith.phone` is `true` above.
-    sms: true,
   },
   groups: ['Admin', 'Shopper'],
   triggers: {
