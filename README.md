@@ -50,6 +50,7 @@ pnpm dev                                       # http://localhost:3000
 | `pnpm lint` / `pnpm type-check` | Code quality |
 | `pnpm test` / `pnpm test:coverage` | Unit tests (Jest) |
 | `pnpm test:e2e` | E2E tests (Playwright, against a local build) |
+| `pnpm storybook` | Component & design-system docs at http://localhost:6006 |
 | `pnpm quality` | Every check CI runs |
 
 ## Project structure

@@ -30,8 +30,8 @@ i18n
       caches: ['localStorage'],
     },
 
-    // Supported languages
-    supportedLngs: ['en', 'es', 'fr', 'de', 'ja', 'zh', 'ar'],
+    // English first (SRS §25.6). Sinhala (si) and Tamil (ta) will be added later.
+    supportedLngs: ['en'],
 
     // Namespaces
     ns: ['common', 'navigation', 'forms'],

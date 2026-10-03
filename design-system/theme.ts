@@ -29,10 +29,16 @@ export const lightTheme = {
   },
   // Brand
   brand: {
-    base: tokens.colors.brand[500],
-    hover: tokens.colors.brand[600],
+    base: tokens.colors.brand[600],
+    hover: tokens.colors.brand[700],
     subtle: tokens.colors.brand[50],
-    emphasis: tokens.colors.brand[700],
+    emphasis: tokens.colors.brand[800],
+  },
+  accent: {
+    base: tokens.colors.earth[600],
+    hover: tokens.colors.earth[700],
+    subtle: tokens.colors.earth[50],
+    emphasis: tokens.colors.earth[800],
   },
   // Semantic
   success: tokens.colors.success,
@@ -77,6 +83,12 @@ export const darkTheme: Theme = {
     hover: tokens.colors.brand[300],
     subtle: tokens.colors.brand[950],
     emphasis: tokens.colors.brand[200],
+  },
+  accent: {
+    base: tokens.colors.earth[300],
+    hover: tokens.colors.earth[200],
+    subtle: tokens.colors.earth[950],
+    emphasis: tokens.colors.earth[100],
   },
   success: tokens.colors.success,
   warning: tokens.colors.warning,

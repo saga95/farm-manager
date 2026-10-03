@@ -3,6 +3,12 @@ import '@aws-amplify/ui-react/styles.css';
 import type { AppProps } from 'next/app';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { DM_Sans } from 'next/font/google';
+import { AppCacheProvider } from '@mui/material-nextjs/v14-pagesRouter';
+import CssBaseline from '@mui/material/CssBaseline';
+import GlobalStyles from '@mui/material/GlobalStyles';
+import { ThemeProvider } from '@mui/material/styles';
+import { appTheme } from '@/lib/theme';
 import { Amplify } from 'aws-amplify';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary, {
@@ -15,6 +21,16 @@ import { RBACProvider } from '@/contexts/RBACContext';
 import { resolveProfileFromCognitoGroups } from '@/rbac';
 import '@/lib/i18n'; // Initialize i18n
 export { reportWebVitals } from '@/lib/webVitals';
+
+// ─── Font ───────────────────────────────────────────────────────────────────────
+// Self-hosted by next/font; exposed as --font-body so tokens.typography.fontFamily
+// resolves to it everywhere, including MUI portals rendered outside the app root.
+
+const dmSans = DM_Sans({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
 
 // ─── Amplify Provider ──────────────────────────────────────────────────────────
 
@@ -85,7 +101,8 @@ const queryClient = new QueryClient({
 
 // ─── App Component ─────────────────────────────────────────────────────────────
 
-export default function App({ Component, pageProps }: AppProps) {
+export default function App(props: AppProps) {
+  const { Component, pageProps } = props;
   const router = useRouter();
 
   // Track page views (integrate with your analytics provider)
@@ -102,25 +119,33 @@ export default function App({ Component, pageProps }: AppProps) {
   }, [router.events]);
 
   return (
-    <RootErrorBoundary>
-      <AmplifyProvider>
-        <AuthProvider>
-          <AuthenticatedRBACProvider>
-            <QueryClientProvider client={queryClient}>
-              <ErrorBoundary level='app'>
-                <ToastProvider>
-                  <a href='#main-content' className='skip-link'>
-                    Skip to main content
-                  </a>
-                  <RouteErrorBoundary>
-                    <Component {...pageProps} />
-                  </RouteErrorBoundary>
-                </ToastProvider>
-              </ErrorBoundary>
-            </QueryClientProvider>
-          </AuthenticatedRBACProvider>
-        </AuthProvider>
-      </AmplifyProvider>
-    </RootErrorBoundary>
+    <AppCacheProvider {...props}>
+      <ThemeProvider theme={appTheme} defaultMode='system'>
+        <CssBaseline enableColorScheme />
+        <GlobalStyles
+          styles={{ ':root': { '--font-body': dmSans.style.fontFamily } }}
+        />
+        <RootErrorBoundary>
+          <AmplifyProvider>
+            <AuthProvider>
+              <AuthenticatedRBACProvider>
+                <QueryClientProvider client={queryClient}>
+                  <ErrorBoundary level='app'>
+                    <ToastProvider>
+                      <a href='#main-content' className='skip-link'>
+                        Skip to main content
+                      </a>
+                      <RouteErrorBoundary>
+                        <Component {...pageProps} />
+                      </RouteErrorBoundary>
+                    </ToastProvider>
+                  </ErrorBoundary>
+                </QueryClientProvider>
+              </AuthenticatedRBACProvider>
+            </AuthProvider>
+          </AmplifyProvider>
+        </RootErrorBoundary>
+      </ThemeProvider>
+    </AppCacheProvider>
   );
 }

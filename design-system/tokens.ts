@@ -7,19 +7,34 @@
 export const tokens = {
   // ─── COLOR PRIMITIVES ───────────────────────────────────────────
   colors: {
-    // Brand
+    // Brand: "coconut leaf" green. Agritech identity; 600 is the light-mode
+    // primary because white text on it passes WCAG AA (5.2:1).
     brand: {
-      50: '#f0f4ff',
-      100: '#e0eaff',
-      200: '#c0d4ff',
-      300: '#91b4ff',
-      400: '#6090ff',
-      500: '#3d6bfb', // Primary
-      600: '#2a50e8',
-      700: '#1f3db8',
-      800: '#1a328f',
-      900: '#1a2d6b',
-      950: '#111c44',
+      50: '#effaf3',
+      100: '#d8f3e1',
+      200: '#b3e6c6',
+      300: '#80d2a3',
+      400: '#4cb67c',
+      500: '#2a9a60',
+      600: '#1d7c4c',
+      700: '#19633f',
+      800: '#174f35',
+      900: '#14412d',
+      950: '#0a2419',
+    },
+    // Accent: "husk" earth tone. Secondary actions and highlights.
+    earth: {
+      50: '#fbf6ef',
+      100: '#f4e8d6',
+      200: '#e8cfab',
+      300: '#d9b07a',
+      400: '#c99353',
+      500: '#b07a3c',
+      600: '#94612c',
+      700: '#774d25',
+      800: '#623f23',
+      900: '#523520',
+      950: '#2d1b0f',
     },
     // Neutrals
     neutral: {
@@ -47,8 +62,10 @@ export const tokens = {
   // ─── TYPOGRAPHY ─────────────────────────────────────────────────
   typography: {
     fontFamily: {
-      display: "'Cal Sans', 'Playfair Display', Georgia, serif",
-      body: "'DM Sans', 'Helvetica Neue', Arial, sans-serif",
+      // --font-body is injected by next/font (DM Sans) in src/pages/_app.tsx
+      display:
+        "var(--font-body, 'DM Sans'), 'Helvetica Neue', Arial, sans-serif",
+      body: "var(--font-body, 'DM Sans'), 'Helvetica Neue', Arial, sans-serif",
       mono: "'JetBrains Mono', 'Fira Code', monospace",
     },
     fontSize: {

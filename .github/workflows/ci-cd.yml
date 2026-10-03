@@ -85,6 +85,22 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
+  storybook:
+    name: Storybook Build
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build-storybook
+
   # E2E runs against a local production build inside the runner, not against
   # a deployed environment (we never create environments for testing).
   e2e:
@@ -133,7 +149,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [build, e2e, security]
+    needs: [build, e2e, storybook, security]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: write
