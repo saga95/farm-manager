@@ -2,44 +2,73 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import Backend from 'i18next-http-backend';
+import enCommon from '../../public/locales/en/common.json';
+import enDashboard from '../../public/locales/en/dashboard.json';
+import enForms from '../../public/locales/en/forms.json';
+import enNavigation from '../../public/locales/en/navigation.json';
+import enShell from '../../public/locales/en/shell.json';
 
-i18n
-  // Load translation using http
-  .use(Backend)
-  // Detect user language
-  .use(LanguageDetector)
-  // Pass the i18n instance to react-i18next
-  .use(initReactI18next)
-  // Init i18next
-  .init({
-    fallbackLng: 'en',
-    debug: process.env['NODE_ENV'] === 'development',
+/**
+ * English is bundled into the build so the server-rendered HTML and the first
+ * client render contain real text, not translation keys (#120, SRS §25.2).
+ * Other languages (Sinhala/Tamil later, SRS §25.6) load over HTTP on demand.
+ */
+export const NAMESPACES = [
+  'common',
+  'navigation',
+  'forms',
+  'shell',
+  'dashboard',
+] as const;
 
-    interpolation: {
-      escapeValue: false, // React already does escaping
-    },
+const resources = {
+  en: {
+    common: enCommon,
+    navigation: enNavigation,
+    forms: enForms,
+    shell: enShell,
+    dashboard: enDashboard,
+  },
+};
 
-    backend: {
-      // Path where resources are loaded from
-      loadPath: '/locales/{{lng}}/{{ns}}.json',
-    },
+const isBrowser = typeof window !== 'undefined';
 
-    detection: {
-      // Order of language detection
-      order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
-    },
+if (isBrowser) {
+  i18n.use(Backend).use(LanguageDetector);
+}
 
-    // English first (SRS §25.6). Sinhala (si) and Tamil (ta) will be added later.
-    supportedLngs: ['en'],
+void i18n.use(initReactI18next).init({
+  resources,
+  // Bundled languages are complete; anything else may still come from the backend
+  partialBundledLanguages: true,
+  // Synchronous init: resources are already in memory
+  initImmediate: false,
+  // The server always renders English; the browser detects the language
+  ...(isBrowser ? {} : { lng: 'en' }),
+  fallbackLng: 'en',
+  // English first (SRS §25.6). Sinhala (si) and Tamil (ta) will be added later.
+  supportedLngs: ['en'],
+  nonExplicitSupportedLngs: true,
+  ns: [...NAMESPACES],
+  defaultNS: 'common',
+  debug: false,
 
-    // Namespaces
-    ns: ['common', 'navigation', 'forms', 'shell', 'dashboard'],
-    defaultNS: 'common',
+  interpolation: {
+    escapeValue: false, // React already does escaping
+  },
 
-    react: {
-      useSuspense: false,
-    },
-  });
+  backend: {
+    loadPath: '/locales/{{lng}}/{{ns}}.json',
+  },
+
+  detection: {
+    order: ['localStorage', 'navigator', 'htmlTag'],
+    caches: ['localStorage'],
+  },
+
+  react: {
+    useSuspense: false,
+  },
+});
 
 export default i18n;
