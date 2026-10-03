@@ -51,6 +51,7 @@ const customJestConfig = {
     '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
     '<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}',
     '<rootDir>/__tests__/**/*.{js,jsx,ts,tsx}',
+    '<rootDir>/amplify/**/__tests__/**/*.test.{ts,tsx}',
   ],
 
   // Transform ignore patterns

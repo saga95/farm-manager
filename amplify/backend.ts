@@ -1,5 +1,11 @@
 import { defineBackend } from '@aws-amplify/backend';
-import { Stack } from 'aws-cdk-lib';
+import { RemovalPolicy, Stack } from 'aws-cdk-lib';
+import {
+  AttributeType,
+  BillingMode,
+  ProjectionType,
+  Table,
+} from 'aws-cdk-lib/aws-dynamodb';
 import {
   CorsHttpMethod,
   DomainName,
@@ -17,6 +23,7 @@ import { data } from './data/resource';
 import { storage } from './storage/resource';
 import { postConfirmation } from './auth/post-confirmation/resource';
 import { apiRouter } from './api/resource';
+import { farmApi } from './functions/farm-api/resource';
 
 /**
  * Main backend definition.
@@ -37,7 +44,45 @@ const backend = defineBackend({
   storage,
   postConfirmation,
   apiRouter,
+  farmApi,
 });
+
+// ─── FarmData table (ADR-0002) ──────────────────────────────────────────────────
+//
+// Single table for all business data. Created in the same nested stack as the
+// farm-api function (resourceGroupName 'data') so grants don't create cross-stack
+// cycles. Every PK / GSI1 key is tenant-prefixed (src/domain/keys.ts).
+// Point-in-time recovery is on (SRS §25.4). The table is retained on stack
+// deletion, and deletion-protected on the prod branch.
+
+const isProdBranch = process.env['AWS_BRANCH'] === 'main';
+const farmStack = Stack.of(backend.farmApi.resources.lambda);
+
+const farmTable = new Table(farmStack, 'FarmData', {
+  partitionKey: { name: 'PK', type: AttributeType.STRING },
+  sortKey: { name: 'SK', type: AttributeType.STRING },
+  billingMode: BillingMode.PAY_PER_REQUEST,
+  pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+  deletionProtection: isProdBranch,
+  removalPolicy: RemovalPolicy.RETAIN,
+});
+
+farmTable.addGlobalSecondaryIndex({
+  indexName: 'GSI1',
+  partitionKey: { name: 'GSI1PK', type: AttributeType.STRING },
+  sortKey: { name: 'GSI1SK', type: AttributeType.STRING },
+  projectionType: ProjectionType.ALL,
+});
+
+farmTable.addGlobalSecondaryIndex({
+  indexName: 'GSI2',
+  partitionKey: { name: 'GSI2PK', type: AttributeType.STRING },
+  sortKey: { name: 'GSI2SK', type: AttributeType.STRING },
+  projectionType: ProjectionType.ALL,
+});
+
+farmTable.grantReadWriteData(backend.farmApi.resources.lambda);
+backend.farmApi.addEnvironment('FARM_TABLE_NAME', farmTable.tableName);
 
 // ─── Cognito password policy ────────────────────────────────────────────────────
 
