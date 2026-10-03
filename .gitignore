@@ -52,3 +52,7 @@ next-env.d.ts
 
 # amplify — amplify_outputs.json is public client config (not secrets)
 # It is committed as a stub; `pnpm amplify:outputs:dev` overwrites it locally with dev values
+
+# storybook
+storybook-static
+*storybook.log

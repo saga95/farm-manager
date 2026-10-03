@@ -14,7 +14,9 @@ export {
 } from './theme';
 export type { Theme as SemanticTheme } from './theme';
 export {
+  appTheme,
   buildMuiTheme,
   lightMuiThemeOptions,
   darkMuiThemeOptions,
+  TOUCH_TARGET,
 } from './mui-theme';

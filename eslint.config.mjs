@@ -27,6 +27,7 @@ const eslintConfig = [
       '**/coverage/**',
       '**/playwright-report/**',
       '**/test-results/**',
+      '**/storybook-static/**',
       '**/*.config.js',
       '**/*.config.ts',
       'next-env.d.ts',
