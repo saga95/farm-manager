@@ -137,6 +137,17 @@ export default function BuyerPage() {
             </SummaryCard>
           )}
 
+          {can('sale.record') && b.status !== 'ARCHIVED' && (
+            <Button
+              component={NextLink}
+              href={`/sales/new?buyer=${b.id}`}
+              variant='contained'
+              size='large'
+            >
+              {t('buyer.recordSale')}
+            </Button>
+          )}
+
           {canManage && (
             <Stack direction='row' spacing={1}>
               {b.status !== 'ARCHIVED' && (

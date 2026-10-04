@@ -41,6 +41,14 @@ import {
   initiateMediaUpload,
   listMedia,
 } from './media';
+import {
+  archiveSale,
+  getSale,
+  listSales,
+  recordSale,
+  restoreSale,
+  updateSale,
+} from './sales';
 import { recordCoconutSample } from './samples';
 import {
   dehuskProduce,
@@ -95,6 +103,12 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       getBuyer,
       createBuyer,
       updateBuyer,
+      recordSale,
+      updateSale,
+      archiveSale,
+      restoreSale,
+      getSale,
+      listSales,
       getTreeHistory,
       listDueTrees,
       recordCoconutSample,

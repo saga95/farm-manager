@@ -27,6 +27,7 @@ export const MEDIA_ENTITY_TYPES = {
   TreeHarvest: 'HARVEST',
   CoconutSample: 'SAMPLE',
   PluckingRound: 'ROUND',
+  Sale: 'SALE',
 } as const;
 export type MediaEntityType =
   (typeof MEDIA_ENTITY_TYPES)[keyof typeof MEDIA_ENTITY_TYPES];
@@ -37,6 +38,7 @@ export const DEFAULT_CATEGORY: Record<MediaEntityType, MediaCategory> = {
   HARVEST: 'HARVEST_PILE',
   SAMPLE: 'DEHUSKED_SAMPLE',
   ROUND: 'GENERAL',
+  SALE: 'SALE_LOT',
 };
 
 export const MEDIA_CONTENT_TYPES = {

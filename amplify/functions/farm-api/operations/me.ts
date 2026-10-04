@@ -6,6 +6,7 @@
 import { QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { z } from 'zod';
 import { keys } from '../../../../src/domain/keys';
+import { getItem } from '../lib/crud';
 import { ddb, tableName } from '../lib/db';
 import { ApiError } from '../lib/errors';
 import { loadTenantAccess } from '../lib/authorize';
@@ -14,6 +15,7 @@ import { userOperation } from '../lib/operation';
 export interface MembershipView {
   tenantId: string;
   tenantName: string;
+  currency: string | null;
   profileId: string;
   profileName: string;
   entitlements: string[];
@@ -44,9 +46,11 @@ export const me = userOperation({
           item['tenantId'] as string,
           ctx.userId
         );
+        const tenant = await getItem(keys.tenant(access.tenantId));
         memberships.push({
           tenantId: access.tenantId,
           tenantName: String(item['tenantName'] ?? ''),
+          currency: (tenant?.['defaultCurrency'] as string | undefined) ?? null,
           profileId: access.profile.id,
           profileName: access.profile.name,
           entitlements: [...access.entitlements].sort(),

@@ -89,6 +89,8 @@ function unwrap<T>(res: Result<T>): T {
 export interface Membership {
   tenantId: string;
   tenantName: string;
+  /** Tenant default currency (ISO 4217) */
+  currency?: string | null;
   profileId: string;
   profileName: string;
   entitlements: string[];
@@ -1041,3 +1043,132 @@ export const updateBuyer = async (
       ...changes,
     })
   ) as Buyer;
+
+// ─── Sales (#85–#89) ────────────────────────────────────────────────────────
+
+export interface SaleLine {
+  sizeClass?: string | null;
+  quantity: number;
+  unitPrice: number;
+  lineAmount: number;
+}
+
+export interface SaleAllocation {
+  batchId: string;
+  state: ProduceState;
+  quantity: number;
+}
+
+export interface Sale {
+  id: string;
+  farmId: string;
+  saleDate: string;
+  buyerId?: string | null;
+  buyerName?: string | null;
+  lines: SaleLine[];
+  allocations: SaleAllocation[];
+  totalQuantity: number;
+  calculatedAmount: number;
+  actualAmountReceived?: number | null;
+  difference?: number | null;
+  differenceReason?: string | null;
+  currency: string;
+  notes?: string | null;
+  status: string;
+  deletedAt?: string | null;
+  version: number;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface SaleInput {
+  buyerId: string | null;
+  lines: { sizeClass: string | null; quantity: number; unitPrice: number }[];
+  allocations: SaleAllocation[];
+  actualAmountReceived: number | null;
+  differenceReason: string | null;
+  notes: string | null;
+}
+
+/** AWSJSON arguments travel as JSON strings. */
+const saleVars = (s: SaleInput) => ({
+  ...s,
+  lines: JSON.stringify(s.lines),
+  allocations: JSON.stringify(s.allocations),
+});
+
+export const recordSale = async (
+  tenantId: string,
+  input: SaleInput & { farmId: string; saleId: string; saleDate: string }
+) =>
+  unwrap(
+    await mu('recordSale')({ tenantId, ...input, ...saleVars(input) })
+  ) as Sale;
+
+export const updateSale = async (
+  tenantId: string,
+  sale: Sale,
+  input: SaleInput & { reason: string | null }
+) =>
+  unwrap(
+    await mu('updateSale')({
+      tenantId,
+      saleId: sale.id,
+      expectedVersion: sale.version,
+      reason: input.reason,
+      ...saleVars(input),
+    })
+  ) as Sale;
+
+export const archiveSale = async (
+  tenantId: string,
+  sale: Sale,
+  reason: string | null
+) =>
+  unwrap(
+    await mu('archiveSale')({
+      tenantId,
+      saleId: sale.id,
+      expectedVersion: sale.version,
+      reason,
+    })
+  ) as Sale;
+
+export const restoreSale = async (tenantId: string, sale: Sale) =>
+  unwrap(
+    await mu('restoreSale')({
+      tenantId,
+      saleId: sale.id,
+      expectedVersion: sale.version,
+    })
+  ) as Sale;
+
+export const getSale = async (tenantId: string, saleId: string) =>
+  unwrap(await q('getSale')({ tenantId, saleId })) as Sale;
+
+export interface SaleFilters {
+  buyerId?: string | null;
+  from?: string | null;
+  to?: string | null;
+  includeDeleted?: boolean;
+}
+
+export const listSales = async (
+  tenantId: string,
+  farmId: string,
+  filters: SaleFilters,
+  nextToken?: string | null
+) => {
+  const d = unwrap(
+    await q('listSales')({
+      tenantId,
+      farmId,
+      buyerId: filters.buyerId ?? null,
+      from: filters.from ?? null,
+      to: filters.to ?? null,
+      includeDeleted: filters.includeDeleted ?? false,
+      nextToken: nextToken ?? null,
+    })
+  ) as { sales: Sale[]; nextToken?: string | null };
+  return { sales: [...d.sales], nextToken: d.nextToken ?? null };
+};

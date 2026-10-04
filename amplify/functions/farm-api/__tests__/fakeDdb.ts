@@ -73,20 +73,29 @@ export function installFakeDdb() {
 
   mock.on(QueryCommand).callsFake(input => {
     const pkAttr = input.IndexName ? `${input.IndexName}PK` : 'PK';
-    const want = input.ExpressionAttributeValues?.[':pk'];
-    const prefix = String(input.KeyConditionExpression ?? '').includes(
-      'begins_with'
-    )
-      ? String(input.ExpressionAttributeValues?.[':sk'] ?? '')
+    const skAttr = input.IndexName ? `${input.IndexName}SK` : 'SK';
+    const cond = String(input.KeyConditionExpression ?? '');
+    const vals = input.ExpressionAttributeValues ?? {};
+    const want = vals[':pk'];
+    const prefix = cond.includes('begins_with')
+      ? String(vals[':sk'] ?? '')
+      : null;
+    const between = cond.includes('BETWEEN')
+      ? [String(vals[':a']), String(vals[':b'])]
       : null;
     let items = [...store.values()]
       .filter(i => i[pkAttr] === want)
-      .filter(i => prefix === null || String(i['SK']).startsWith(prefix));
+      .filter(i => prefix === null || String(i[skAttr]).startsWith(prefix))
+      .filter(
+        i =>
+          between === null ||
+          (String(i[skAttr]) >= between[0]! && String(i[skAttr]) <= between[1]!)
+      );
     if (input.Limit === undefined && !input.ExclusiveStartKey)
       return { Items: items.map(i => structuredClone(i)) };
-    // Paged queries: sort by SK, honour direction, start key and limit
+    // Paged queries: sort by the sort key, honour direction, start key and limit
     items = items.sort((a, b) =>
-      String(a['SK']).localeCompare(String(b['SK']))
+      String(a[skAttr]).localeCompare(String(b[skAttr]))
     );
     if (input.ScanIndexForward === false) items.reverse();
     const start = input.ExclusiveStartKey as Item | undefined;
@@ -98,10 +107,19 @@ export function installFakeDdb() {
     }
     const page = input.Limit ? items.slice(0, input.Limit) : items;
     const last = page.at(-1);
+    const lastKey = last
+      ? {
+          PK: last['PK'],
+          SK: last['SK'],
+          ...(input.IndexName
+            ? { [pkAttr]: last[pkAttr], [skAttr]: last[skAttr] }
+            : {}),
+        }
+      : undefined;
     return {
       Items: page.map(i => structuredClone(i)),
-      ...(input.Limit && items.length > input.Limit && last
-        ? { LastEvaluatedKey: { PK: last['PK'], SK: last['SK'] } }
+      ...(input.Limit && items.length > input.Limit && lastKey
+        ? { LastEvaluatedKey: lastKey }
         : {}),
     };
   });
