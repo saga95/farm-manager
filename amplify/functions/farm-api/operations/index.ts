@@ -18,7 +18,9 @@ import {
   updateZone,
 } from './farm';
 import { me } from './me';
+import { listProduceBatches } from './inventory';
 import {
+  completePluckingRound,
   createPluckingRound,
   getPluckingRound,
   listPluckingRounds,
@@ -50,5 +52,7 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       getPluckingRound,
       updateRoundPlan,
       recordTreeHarvest,
+      completePluckingRound,
+      listProduceBatches,
     ].map(op => [op.name, op])
   );

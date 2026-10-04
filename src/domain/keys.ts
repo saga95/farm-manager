@@ -117,6 +117,28 @@ export const keys: KeyBuilders = {
     GSI1SK: `H${SEP}${assertId('treeCode', treeCode)}`,
   }),
 
+  /** Produce batch within a farm (ADR-0002, SRS §11.2). */
+  produceBatch: (
+    tenantId: string,
+    farmId: string,
+    cropCode: string,
+    batchDate: string,
+    batchId: string
+  ): Key => ({
+    PK: keys.farmPk(tenantId, farmId),
+    SK: `BATCH${SEP}${assertId('cropCode', cropCode)}${SEP}${assertId('batchDate', batchDate)}${SEP}${assertId('batchId', batchId)}`,
+  }),
+  /** Produce inventory transaction; txnId is deterministic per cause (ADR-0004). */
+  produceTxn: (
+    tenantId: string,
+    batchId: string,
+    txnDate: string,
+    txnId: string
+  ): Key => ({
+    PK: `${t(tenantId)}${SEP}B${SEP}${assertId('batchId', batchId)}`,
+    SK: `TX${SEP}${assertId('txnDate', txnDate)}${SEP}${txnId}`,
+  }),
+
   /** GSI2: get any entity by id; results MUST be tenant-checked. */
   byId: (id: string) => ({ GSI2PK: `ID${SEP}${assertId('id', id)}` }),
 
@@ -139,6 +161,7 @@ export const keys: KeyBuilders = {
     spaces: 'SPACE#',
     trees: 'TREE#',
     rounds: 'ROUND#',
+    batches: 'BATCH#',
   },
   tenantPk: t,
 };
@@ -184,6 +207,19 @@ interface KeyBuilders {
     roundId: string,
     treeCode: string
   ) => { GSI1PK: string; GSI1SK: string };
+  produceBatch: (
+    tenantId: string,
+    farmId: string,
+    cropCode: string,
+    batchDate: string,
+    batchId: string
+  ) => Key;
+  produceTxn: (
+    tenantId: string,
+    batchId: string,
+    txnDate: string,
+    txnId: string
+  ) => Key;
   byId: (id: string) => { GSI2PK: string };
   audit: (
     tenantId: string,
@@ -200,7 +236,8 @@ interface KeyBuilders {
       | 'zones'
       | 'spaces'
       | 'trees'
-      | 'rounds',
+      | 'rounds'
+      | 'batches',
       string
     >
   >;

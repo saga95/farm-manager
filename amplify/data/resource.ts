@@ -149,6 +149,7 @@ const schema = a.schema({
     pluckerName: a.string(),
     notes: a.string(),
     totalNuts: a.integer(),
+    batchId: a.id(),
     completedAt: a.string(),
     version: a.integer().required(),
     createdAt: a.string(),
@@ -173,6 +174,23 @@ const schema = a.schema({
     version: a.integer().required(),
     createdAt: a.string(),
     updatedAt: a.string(),
+  }),
+
+  ProduceBatch: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    farmId: a.id().required(),
+    cropCode: a.string().required(),
+    sourceType: a.string().required(),
+    sourceId: a.id(),
+    batchDate: a.string().required(),
+    quantityReceived: a.float().required(),
+    unit: a.string().required(),
+    available: a.float().required(),
+    availableByState: a.json(),
+    status: a.string().required(),
+    version: a.integer().required(),
+    createdAt: a.string(),
   }),
 
   PluckingRoundDetail: a.customType({
@@ -443,6 +461,30 @@ const schema = a.schema({
       excludeFromPrediction: a.boolean(),
     })
     .returns(a.ref('TreeHarvest').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  completePluckingRound: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      roundId: a.id().required(),
+      expectedVersion: a.integer().required(),
+    })
+    .returns(a.ref('PluckingRound').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  // ─── Produce inventory (#76) ───────────────────────────────────────────────
+  listProduceBatches: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      cropCode: a.string(),
+      availableOnly: a.boolean(),
+    })
+    .returns(a.ref('ProduceBatch').required().array().required())
     .authorization(allow => [allow.authenticated()])
     .handler(a.handler.function(farmApi)),
 });
