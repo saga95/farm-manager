@@ -14,7 +14,12 @@ import {
 import { getById, queryPrefix, toView } from '../lib/crud';
 import { notFound } from '../lib/errors';
 import { tenantOperation } from '../lib/operation';
-import { computeTreeDerived, treeHarvests } from '../lib/treeSnapshot';
+import {
+  computeSizeHistory,
+  computeTreeDerived,
+  treeHarvests,
+  treeSamples,
+} from '../lib/treeSnapshot';
 
 const id = z.string().refine(isUlid, 'must be a ULID');
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must be YYYY-MM-DD');
@@ -36,6 +41,9 @@ export const getTreeHistory = tenantOperation({
       h => !h['deletedAt']
     );
     const { summary, prediction } = computeTreeDerived(harvests, today);
+    const samples = (await treeSamples(ctx, input.treeId)).filter(
+      x => !x['deletedAt']
+    );
     return {
       tree: toView(tree),
       harvests: harvests
@@ -45,6 +53,12 @@ export const getTreeHistory = tenantOperation({
         .map(h => toView(h)),
       summary,
       prediction,
+      samples: samples
+        .sort((a, b) =>
+          String(b['sampledAt']).localeCompare(String(a['sampledAt']))
+        )
+        .map(x => toView(x)),
+      sizeHistory: computeSizeHistory(samples),
     };
   },
 });
@@ -79,6 +93,9 @@ export const listDueTrees = tenantOperation({
         lastHarvestDate: last,
         lastQuantity: (t['lastQuantity'] as number | null | undefined) ?? null,
         daysSinceLast: last ? daysBetween(last, today) : null,
+        latestSampleSize:
+          (t['latestSampleSize'] as string | null | undefined) ?? null,
+        sizeTendency: (t['sizeTendency'] as string | null | undefined) ?? null,
       };
     });
     // §10.3: sort by predicted date (earliest first); no-history trees last, by code

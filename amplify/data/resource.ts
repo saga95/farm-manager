@@ -123,6 +123,12 @@ const schema = a.schema({
     locationNote: a.string(),
     notes: a.string(),
     coverPhotoId: a.id(),
+    lastHarvestDate: a.string(),
+    lastQuantity: a.integer(),
+    harvestCount: a.integer(),
+    latestSampleSize: a.string(),
+    sizeTendency: a.string(),
+    sampleCount: a.integer(),
     version: a.integer().required(),
     createdAt: a.string(),
     updatedAt: a.string(),
@@ -196,6 +202,45 @@ const schema = a.schema({
   PluckingRoundDetail: a.customType({
     round: a.ref('PluckingRound').required(),
     harvests: a.ref('TreeHarvest').required().array().required(),
+    samples: a.ref('CoconutSample').required().array().required(),
+  }),
+
+  CoconutSample: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    harvestId: a.id().required(),
+    roundId: a.id(),
+    treeId: a.id().required(),
+    treeCode: a.string().required(),
+    sampledAt: a.string().required(),
+    sampleCount: a.integer().required(),
+    sizeClass: a.string().required(),
+    weight: a.float(),
+    weightUnit: a.string(),
+    diameter: a.float(),
+    circumference: a.float(),
+    measurementUnit: a.string(),
+    notes: a.string(),
+    version: a.integer().required(),
+    createdAt: a.string(),
+    updatedAt: a.string(),
+  }),
+
+  SizeCounts: a.customType({
+    SMALL: a.integer().required(),
+    MEDIUM: a.integer().required(),
+    LARGE: a.integer().required(),
+    UNCLASSIFIED: a.integer().required(),
+  }),
+
+  SizeHistory: a.customType({
+    latest: a.string(),
+    latestDate: a.string(),
+    sampleCount: a.integer().required(),
+    counts: a.ref('SizeCounts').required(),
+    recent: a.string().required().array().required(),
+    tendency: a.string(),
+    tendencyMatches: a.integer().required(),
   }),
 
   TreeYieldSummary: a.customType({
@@ -228,6 +273,8 @@ const schema = a.schema({
     harvests: a.ref('TreeHarvest').required().array().required(),
     summary: a.ref('TreeYieldSummary').required(),
     prediction: a.ref('Prediction').required(),
+    samples: a.ref('CoconutSample').required().array().required(),
+    sizeHistory: a.ref('SizeHistory').required(),
   }),
 
   DueTree: a.customType({
@@ -237,6 +284,8 @@ const schema = a.schema({
     lastHarvestDate: a.string(),
     lastQuantity: a.integer(),
     daysSinceLast: a.integer(),
+    latestSampleSize: a.string(),
+    sizeTendency: a.string(),
   }),
 
   CreateTenantResult: a.customType({
@@ -549,6 +598,25 @@ const schema = a.schema({
       today: a.string(),
     })
     .returns(a.ref('DueTree').required().array().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  // ─── Dehusked samples (#62–#67) ───────────────────────────────────────────
+  recordCoconutSample: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      harvestId: a.id().required(),
+      sampleId: a.id().required(),
+      sizeClass: a.string().required(),
+      weight: a.float(),
+      weightUnit: a.string(),
+      diameter: a.float(),
+      circumference: a.float(),
+      measurementUnit: a.string(),
+      notes: a.string(),
+    })
+    .returns(a.ref('CoconutSample').required())
     .authorization(allow => [allow.authenticated()])
     .handler(a.handler.function(farmApi)),
 });

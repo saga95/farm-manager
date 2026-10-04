@@ -34,6 +34,7 @@ import {
 } from '../../../../src/domain/plucking';
 import {
   type Item,
+  batchGetItems,
   createWithAudit,
   getById,
   getItem,
@@ -206,10 +207,28 @@ export const getPluckingRound = tenantOperation({
   input: z.object({ tenantId: z.string().min(1), roundId: id }),
   handler: async (input, ctx) => {
     const round = await loadRound(ctx, input.roundId);
-    const harvests = await roundHarvests(ctx, input.roundId);
+    const harvests = (await roundHarvests(ctx, input.roundId)).filter(
+      h => !h['deletedAt']
+    );
+    // Samples are keyed by their harvest (one per harvest, §9.2)
+    const samples = harvests.length
+      ? await batchGetItems(
+          harvests.map(h =>
+            keys.sample(
+              ctx.access.tenantId,
+              String(h['treeId']),
+              String(h['harvestDate']),
+              String(h['id'])
+            )
+          )
+        )
+      : [];
     return {
       round: toView(round),
-      harvests: harvests.filter(h => !h['deletedAt']).map(h => toView(h)),
+      harvests: harvests.map(h => toView(h)),
+      samples: samples
+        .filter(x => x['tenantId'] === ctx.access.tenantId && !x['deletedAt'])
+        .map(x => toView(x)),
     };
   },
 });

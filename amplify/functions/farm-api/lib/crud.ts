@@ -8,6 +8,7 @@
 
 import { TransactionCanceledException } from '@aws-sdk/client-dynamodb';
 import {
+  BatchGetCommand,
   GetCommand,
   QueryCommand,
   TransactWriteCommand,
@@ -240,4 +241,21 @@ export async function queryPrefix(
     ExclusiveStartKey = res.LastEvaluatedKey;
   } while (ExclusiveStartKey);
   return items;
+}
+
+/** BatchGet up to any number of keys (chunks of 100); missing keys are skipped. */
+export async function batchGetItems(keyList: readonly Key[]): Promise<Item[]> {
+  const out: Item[] = [];
+  const TableName = tableName();
+  for (let i = 0; i < keyList.length; i += 100) {
+    const res = await ddb.send(
+      new BatchGetCommand({
+        RequestItems: {
+          [TableName]: { Keys: keyList.slice(i, i + 100).map(k => ({ ...k })) },
+        },
+      })
+    );
+    out.push(...(res.Responses?.[TableName] ?? []));
+  }
+  return out;
 }
