@@ -1,0 +1,81 @@
+{
+  "rounds": {
+    "title": "Plucking rounds",
+    "new": "New plucking round",
+    "empty": "No plucking rounds yet. Start one when the plucker arrives.",
+    "inProgress": "In progress",
+    "summary": "{{trees}} trees · {{nuts}} nuts",
+    "summaryOpen_one": "{{count}} tree planned",
+    "summaryOpen_other": "{{count}} trees planned"
+  },
+  "status": {
+    "DRAFT": "Draft",
+    "IN_PROGRESS": "In progress",
+    "COMPLETE": "Complete",
+    "CANCELLED": "Cancelled"
+  },
+  "new": {
+    "title": "New plucking round",
+    "intro": "Select the trees the plucker will climb on this visit. He can pluck them in any order.",
+    "date": "Date",
+    "plucker": "Plucker's name (optional)",
+    "search": "Find a tree by code",
+    "selected_one": "{{count}} tree selected",
+    "selected_other": "{{count}} trees selected",
+    "selectedHint": "Tap trees to select them. The order you tap is kept.",
+    "noTrees": "No active trees yet. Register your trees first.",
+    "registerTrees": "Register trees",
+    "start": "Start round",
+    "starting": "Starting…",
+    "needTrees": "Select at least one tree.",
+    "failed": "Couldn't start the round. Please try again."
+  },
+  "capture": {
+    "title": "Round {{date}}",
+    "checklist": "Trees in this round",
+    "pending": "To pluck",
+    "recorded": "{{count}} nuts",
+    "skipped": "Skipped",
+    "total": "Total so far",
+    "nuts": "nuts",
+    "progress": "{{done}} of {{total}} done",
+    "count": "Coconuts from {{code}}",
+    "countLabel": "Number of coconuts",
+    "approximate": "Count is approximate",
+    "saveNext": "Save & Next",
+    "save": "Save",
+    "saving": "Saving…",
+    "skip": "Skip this tree",
+    "unskip": "Undo skip",
+    "addTree": "Add a tree",
+    "addTitle": "Add a tree to this round",
+    "add": "Add",
+    "allDone": "All trees recorded or skipped.",
+    "review": "Review & complete",
+    "invalid": "Enter a whole number from 0 to 500.",
+    "failed": "Couldn't save. Check your connection and try again.",
+    "conflict": "This round changed on another device. Reloading…",
+    "nextTree": "Next: {{code}}"
+  },
+  "review": {
+    "title": "Review round",
+    "planned": "Planned",
+    "recorded": "Recorded",
+    "skipped": "Skipped",
+    "pending": "Not recorded",
+    "pendingWarning_one": "{{count}} tree has no count. It will be marked as skipped, not zero.",
+    "pendingWarning_other": "{{count}} trees have no count. They will be marked as skipped, not zero.",
+    "total": "Total coconuts",
+    "complete": "Complete round",
+    "completing": "Completing…",
+    "confirm": "Completing adds {{nuts}} coconuts to your stock. Recorded counts can still be corrected later.",
+    "back": "Back to recording",
+    "needOne": "Record at least one tree before completing.",
+    "done": "Round complete. {{nuts}} coconuts added to stock."
+  },
+  "detail": {
+    "plucker": "Plucker",
+    "completedAt": "Completed",
+    "noRecords": "No trees were recorded in this round."
+  }
+}

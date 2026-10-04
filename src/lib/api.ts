@@ -345,3 +345,110 @@ export const bulkCreateTrees = async (
   unwrap(
     await mu('bulkCreateTrees')({ tenantId, farmId, ...input })
   ) as BulkCreateTreesResult;
+
+// ─── Plucking rounds (#51–#55) ───────────────────────────────────────────────
+
+export interface PluckingRound {
+  id: string;
+  tenantId: string;
+  farmId: string;
+  roundDate: string;
+  plannedTreeIds: string[];
+  skippedTreeIds: string[];
+  status: string;
+  pluckerName?: string | null;
+  notes?: string | null;
+  totalNuts?: number | null;
+  batchId?: string | null;
+  completedAt?: string | null;
+  version: number;
+  createdAt?: string | null;
+}
+
+export interface TreeHarvest {
+  id: string;
+  roundId?: string | null;
+  treeId: string;
+  treeCode: string;
+  harvestDate: string;
+  quantity?: number | null;
+  recordQuality: string;
+  notes?: string | null;
+  version: number;
+}
+
+export interface PluckingRoundDetail {
+  round: PluckingRound;
+  harvests: TreeHarvest[];
+}
+
+export const listPluckingRounds = async (tenantId: string, farmId: string) => [
+  ...(unwrap(
+    await q('listPluckingRounds')({ tenantId, farmId })
+  ) as PluckingRound[]),
+];
+
+export const getPluckingRound = async (tenantId: string, roundId: string) => {
+  const d = unwrap(
+    await q('getPluckingRound')({ tenantId, roundId })
+  ) as PluckingRoundDetail;
+  return { round: d.round, harvests: [...d.harvests] };
+};
+
+export const createPluckingRound = async (
+  tenantId: string,
+  input: {
+    farmId: string;
+    roundId: string;
+    roundDate: string;
+    plannedTreeIds: string[];
+    pluckerName?: string | null;
+  }
+) =>
+  unwrap(
+    await mu('createPluckingRound')({ tenantId, ...input })
+  ) as PluckingRound;
+
+export const updateRoundPlan = async (
+  tenantId: string,
+  round: Pick<PluckingRound, 'id' | 'version'>,
+  changes: {
+    addTreeIds?: string[];
+    removeTreeIds?: string[];
+    skipTreeIds?: string[];
+    unskipTreeIds?: string[];
+  }
+) =>
+  unwrap(
+    await mu('updateRoundPlan')({
+      tenantId,
+      roundId: round.id,
+      expectedVersion: round.version,
+      ...changes,
+    })
+  ) as PluckingRound;
+
+export const recordTreeHarvest = async (
+  tenantId: string,
+  input: {
+    roundId: string;
+    treeId: string;
+    harvestId: string;
+    quantity: number;
+    recordQuality?: string;
+    notes?: string | null;
+  }
+) =>
+  unwrap(await mu('recordTreeHarvest')({ tenantId, ...input })) as TreeHarvest;
+
+export const completePluckingRound = async (
+  tenantId: string,
+  round: Pick<PluckingRound, 'id' | 'version'>
+) =>
+  unwrap(
+    await mu('completePluckingRound')({
+      tenantId,
+      roundId: round.id,
+      expectedVersion: round.version,
+    })
+  ) as PluckingRound;
