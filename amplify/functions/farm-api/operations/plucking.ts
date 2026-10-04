@@ -66,6 +66,8 @@ async function loadRound(ctx: TenantContext, roundId: string): Promise<Item> {
 }
 
 function assertOpen(round: Item) {
+  if (round['deletedAt'])
+    throw new ApiError('VALIDATION', 'Round was removed; restore it first');
   if (!OPEN_ROUND_STATUSES.includes(round['status'] as RoundStatus)) {
     throw new ApiError('VALIDATION', 'Round is no longer open');
   }
@@ -188,6 +190,7 @@ export const listPluckingRounds = tenantOperation({
     tenantId: z.string().min(1),
     farmId: id,
     limit: z.number().int().min(1).max(200).nullish(),
+    includeDeleted: z.boolean().nullish(),
   }),
   handler: async (input, ctx) => {
     const items = await queryPrefix(
@@ -195,6 +198,7 @@ export const listPluckingRounds = tenantOperation({
       keys.prefix.rounds
     );
     return items
+      .filter(i => input.includeDeleted || !i['deletedAt'])
       .sort((a, b) => String(b['SK']).localeCompare(String(a['SK']))) // newest first
       .slice(0, input.limit ?? 50)
       .map(i => toView(i));
@@ -207,8 +211,11 @@ export const getPluckingRound = tenantOperation({
   input: z.object({ tenantId: z.string().min(1), roundId: id }),
   handler: async (input, ctx) => {
     const round = await loadRound(ctx, input.roundId);
-    const harvests = (await roundHarvests(ctx, input.roundId)).filter(
-      h => !h['deletedAt']
+    const all = await roundHarvests(ctx, input.roundId);
+    const harvests = all.filter(h => !h['deletedAt']);
+    // Individually removed harvests, so they can be restored (#57)
+    const removedHarvests = all.filter(
+      h => h['deletedAt'] && !h['deletedWithRound']
     );
     // Samples are keyed by their harvest (one per harvest, §9.2)
     const samples = harvests.length
@@ -226,6 +233,7 @@ export const getPluckingRound = tenantOperation({
     return {
       round: toView(round),
       harvests: harvests.map(h => toView(h)),
+      removedHarvests: removedHarvests.map(h => toView(h)),
       samples: samples
         .filter(x => x['tenantId'] === ctx.access.tenantId && !x['deletedAt'])
         .map(x => toView(x)),

@@ -5,21 +5,27 @@ import { ulid } from 'ulid';
 import {
   type PluckingRound,
   type PluckingRoundDetail,
+  type TreeHarvest,
+  archivePluckingRound,
+  archiveTreeHarvest,
   completePluckingRound,
+  correctTreeHarvest,
   createPluckingRound,
   getPluckingRound,
   listPluckingRounds,
   recordTreeHarvest,
+  restorePluckingRound,
+  restoreTreeHarvest,
   updateRoundPlan,
 } from '@/lib/api';
 import { useCurrentFarm } from '@/features/farm/hooks';
 
-export function useRounds() {
+export function useRounds(includeDeleted = false) {
   const { tenantId, farm } = useCurrentFarm();
   const farmId = farm?.id ?? '';
   return useQuery({
-    queryKey: ['rounds', tenantId, farmId],
-    queryFn: () => listPluckingRounds(tenantId, farmId),
+    queryKey: ['rounds', tenantId, farmId, includeDeleted],
+    queryFn: () => listPluckingRounds(tenantId, farmId, includeDeleted),
     enabled: Boolean(tenantId && farmId),
   });
 }
@@ -112,6 +118,58 @@ export function useRoundActions(roundId: string | undefined) {
   });
 
   return { record, plan, complete };
+}
+
+/**
+ * Corrections after the fact (#56, #57): fix a count on a completed round,
+ * remove/restore a harvest or a whole round. Each one can change stock, tree
+ * history and predictions, so they all refresh those too.
+ */
+export function useRoundCorrections(roundId: string | undefined) {
+  const qc = useQueryClient();
+  const { tenantId } = useCurrentFarm();
+  const refresh = () =>
+    Promise.all(
+      [
+        ['round', tenantId, roundId],
+        ['rounds', tenantId],
+        ['batches', tenantId],
+        ['treeHistory', tenantId],
+        ['dueTrees', tenantId],
+        ['trees', tenantId],
+      ].map(queryKey => qc.invalidateQueries({ queryKey }))
+    );
+
+  return {
+    correct: useMutation({
+      mutationFn: (a: {
+        harvest: TreeHarvest;
+        quantity: number;
+        reason: string | null;
+      }) => correctTreeHarvest(tenantId, a.harvest, a),
+      onSuccess: refresh,
+    }),
+    removeHarvest: useMutation({
+      mutationFn: (a: { harvest: TreeHarvest; reason: string | null }) =>
+        archiveTreeHarvest(tenantId, a.harvest, a.reason),
+      onSuccess: refresh,
+    }),
+    restoreHarvest: useMutation({
+      mutationFn: (harvest: TreeHarvest) =>
+        restoreTreeHarvest(tenantId, harvest),
+      onSuccess: refresh,
+    }),
+    removeRound: useMutation({
+      mutationFn: (a: { round: PluckingRound; reason: string | null }) =>
+        archivePluckingRound(tenantId, a.round, a.reason),
+      onSuccess: refresh,
+    }),
+    restoreRound: useMutation({
+      mutationFn: (round: PluckingRound) =>
+        restorePluckingRound(tenantId, round),
+      onSuccess: refresh,
+    }),
+  };
 }
 
 /** Today's date in the farm's local calendar (YYYY-MM-DD). */

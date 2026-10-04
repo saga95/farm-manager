@@ -364,6 +364,8 @@ export interface PluckingRound {
   totalNuts?: number | null;
   batchId?: string | null;
   completedAt?: string | null;
+  deletedAt?: string | null;
+  deleteReason?: string | null;
   version: number;
   createdAt?: string | null;
 }
@@ -377,18 +379,28 @@ export interface TreeHarvest {
   quantity?: number | null;
   recordQuality: string;
   notes?: string | null;
+  previousQuantity?: number | null;
+  deletedAt?: string | null;
+  deleteReason?: string | null;
+  updatedBy?: string | null;
   version: number;
 }
 
 export interface PluckingRoundDetail {
   round: PluckingRound;
   harvests: TreeHarvest[];
+  /** Individually removed harvests (restorable, #57) */
+  removedHarvests?: TreeHarvest[];
   samples?: CoconutSample[];
 }
 
-export const listPluckingRounds = async (tenantId: string, farmId: string) => [
+export const listPluckingRounds = async (
+  tenantId: string,
+  farmId: string,
+  includeDeleted = false
+) => [
   ...(unwrap(
-    await q('listPluckingRounds')({ tenantId, farmId })
+    await q('listPluckingRounds')({ tenantId, farmId, includeDeleted })
   ) as PluckingRound[]),
 ];
 
@@ -399,6 +411,7 @@ export const getPluckingRound = async (tenantId: string, roundId: string) => {
   return {
     round: d.round,
     harvests: [...d.harvests],
+    removedHarvests: [...(d.removedHarvests ?? [])],
     samples: [...(d.samples ?? [])],
   } satisfies PluckingRoundDetail;
 };
@@ -669,3 +682,72 @@ export const archiveMedia = async (tenantId: string, media: Media) =>
       expectedVersion: media.version,
     })
   ) as Media;
+
+// ─── Corrections & soft delete (#56, #57) ───────────────────────────────────
+
+export const correctTreeHarvest = async (
+  tenantId: string,
+  harvest: TreeHarvest,
+  input: { quantity: number; reason?: string | null }
+) =>
+  unwrap(
+    await mu('correctTreeHarvest')({
+      tenantId,
+      harvestId: harvest.id,
+      expectedVersion: harvest.version,
+      quantity: input.quantity,
+      reason: input.reason ?? null,
+    })
+  ) as TreeHarvest;
+
+export const archiveTreeHarvest = async (
+  tenantId: string,
+  harvest: TreeHarvest,
+  reason?: string | null
+) =>
+  unwrap(
+    await mu('archiveTreeHarvest')({
+      tenantId,
+      harvestId: harvest.id,
+      expectedVersion: harvest.version,
+      reason: reason ?? null,
+    })
+  ) as TreeHarvest;
+
+export const restoreTreeHarvest = async (
+  tenantId: string,
+  harvest: TreeHarvest
+) =>
+  unwrap(
+    await mu('restoreTreeHarvest')({
+      tenantId,
+      harvestId: harvest.id,
+      expectedVersion: harvest.version,
+    })
+  ) as TreeHarvest;
+
+export const archivePluckingRound = async (
+  tenantId: string,
+  round: PluckingRound,
+  reason?: string | null
+) =>
+  unwrap(
+    await mu('archivePluckingRound')({
+      tenantId,
+      roundId: round.id,
+      expectedVersion: round.version,
+      reason: reason ?? null,
+    })
+  ) as PluckingRound;
+
+export const restorePluckingRound = async (
+  tenantId: string,
+  round: PluckingRound
+) =>
+  unwrap(
+    await mu('restorePluckingRound')({
+      tenantId,
+      roundId: round.id,
+      expectedVersion: round.version,
+    })
+  ) as PluckingRound;

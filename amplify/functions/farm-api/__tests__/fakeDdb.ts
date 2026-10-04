@@ -107,9 +107,26 @@ export function installFakeDdb() {
     return true;
   };
 
+  type Del = {
+    Key: Item;
+    ConditionExpression?: string;
+    ExpressionAttributeValues?: Item;
+  };
+  const deleteHolds = (del: Del): boolean => {
+    const existing = store.get(k(del.Key['PK'], del.Key['SK']));
+    const m = /^(\w+) = (:\w+)$/.exec(del.ConditionExpression ?? '');
+    if (!m) return true;
+    return (
+      Boolean(existing) &&
+      existing?.[m[1]!] === del.ExpressionAttributeValues?.[m[2]!]
+    );
+  };
+
   mock.on(TransactWriteCommand).callsFake(input => {
-    const puts = (input.TransactItems ?? []).map((t: { Put: Put }) => t.Put);
-    if (!puts.every(conditionHolds)) {
+    const ops = (input.TransactItems ?? []) as { Put?: Put; Delete?: Del }[];
+    const puts = ops.flatMap(t => (t.Put ? [t.Put] : []));
+    const dels = ops.flatMap(t => (t.Delete ? [t.Delete] : []));
+    if (!puts.every(conditionHolds) || !dels.every(deleteHolds)) {
       throw new TransactionCanceledException({
         message: 'Transaction cancelled',
         $metadata: {},
@@ -118,6 +135,7 @@ export function installFakeDdb() {
     puts.forEach(p =>
       store.set(k(p.Item['PK'], p.Item['SK']), structuredClone(p.Item))
     );
+    dels.forEach(d => store.delete(k(d.Key['PK'], d.Key['SK'])));
     return {};
   });
 

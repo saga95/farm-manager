@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { CaptureDialog } from '../../features/plucking/components/CaptureDialog';
+import { CorrectHarvestDialog } from '../../features/plucking/components/CorrectHarvestDialog';
 import { TreePicker } from '../../features/plucking/components/TreePicker';
 import type { Tree } from '../../lib/api';
 
@@ -67,3 +68,39 @@ function PickerDemo() {
 
 /** SCR-008: select the visit's trees first; tap order is the plucker's order. */
 export const TreeSelection: Story = { render: () => <PickerDemo /> };
+
+export const CorrectCompletedRound: Story = {
+  name: 'Correct a completed round (#56)',
+  render: () => (
+    <CorrectHarvestDialog
+      open
+      treeCode='C-012'
+      quantity={20}
+      previousQuantity={18}
+      canEdit
+      canRemove
+      saving={false}
+      onSave={() => undefined}
+      onRemove={() => undefined}
+      onClose={() => undefined}
+    />
+  ),
+};
+
+export const CorrectionStockUsed: Story = {
+  name: 'Correction blocked: stock already used',
+  render: () => (
+    <CorrectHarvestDialog
+      open
+      treeCode='C-012'
+      quantity={20}
+      canEdit
+      canRemove
+      saving={false}
+      error="Some of these nuts were already sold, used or dehusked, so stock can't go that low. Adjust the stock first."
+      onSave={() => undefined}
+      onRemove={() => undefined}
+      onClose={() => undefined}
+    />
+  ),
+};
