@@ -6,6 +6,13 @@ import {
   listTrees,
   updateTree,
 } from './coconut';
+import {
+  archivePluckingRound,
+  archiveTreeHarvest,
+  correctTreeHarvest,
+  restorePluckingRound,
+  restoreTreeHarvest,
+} from './corrections';
 import { createTenant } from './createTenant';
 import {
   createSpace,
@@ -71,5 +78,10 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       listMedia,
       getMediaOriginalUrl,
       archiveMedia,
+      correctTreeHarvest,
+      archiveTreeHarvest,
+      restoreTreeHarvest,
+      archivePluckingRound,
+      restorePluckingRound,
     ].map(op => [op.name, op])
   );

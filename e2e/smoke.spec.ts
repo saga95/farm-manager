@@ -51,10 +51,12 @@ test.describe('Smoke Tests', () => {
     // Desktop
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto('/');
-    expect(await page.isVisible('body')).toBe(true);
+    // Auto-waiting assertion: `/` may be mid-redirect to sign-in, and a
+    // one-shot isVisible() check was flaky under parallel load.
+    await expect(page.locator('body')).toBeVisible();
 
     // Mobile
     await page.setViewportSize({ width: 375, height: 667 });
-    expect(await page.isVisible('body')).toBe(true);
+    await expect(page.locator('body')).toBeVisible();
   });
 });

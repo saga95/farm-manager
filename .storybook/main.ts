@@ -16,6 +16,9 @@ const config: StorybookConfig = {
   core: { disableTelemetry: true },
   viteFinal: async viteConfig => ({
     ...viteConfig,
+    // `staticDirs` already copies public/; Vite copying it too races
+    // (EEXIST on storybook-static/locales/*, seen in CI on #145).
+    publicDir: false,
     build: {
       ...viteConfig.build,
       chunkSizeWarningLimit: 2048,

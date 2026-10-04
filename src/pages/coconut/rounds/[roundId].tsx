@@ -17,6 +17,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Paper from '@mui/material/Paper';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import AddOutlined from '@mui/icons-material/AddOutlined';
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined';
@@ -31,8 +32,13 @@ import {
 } from '@/domain/plucking';
 import { useTrees } from '@/features/coconut/hooks';
 import { CaptureDialog } from '@/features/plucking/components/CaptureDialog';
+import { CorrectHarvestDialog } from '@/features/plucking/components/CorrectHarvestDialog';
 import { TreePicker } from '@/features/plucking/components/TreePicker';
-import { useRound, useRoundActions } from '@/features/plucking/hooks';
+import {
+  useRound,
+  useRoundActions,
+  useRoundCorrections,
+} from '@/features/plucking/hooks';
 import { EntityPhotos } from '@/features/media/components/EntityPhotos';
 import { RoundSamplesCard } from '@/features/samples/components/RoundSamplesCard';
 import { useTenant } from '@/features/tenant';
@@ -49,6 +55,7 @@ export default function RoundPage() {
   const detail = useRound(roundId);
   const trees = useTrees(true);
   const { record, plan, complete } = useRoundActions(roundId);
+  const fix = useRoundCorrections(roundId);
   const { can } = useTenant();
   const [current, setCurrent] = useState<string | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
@@ -56,6 +63,10 @@ export default function RoundPage() {
   const [toAdd, setToAdd] = useState<string[]>([]);
   const [reviewing, setReviewing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [correcting, setCorrecting] = useState<string | null>(null);
+  const [fixError, setFixError] = useState<string | null>(null);
+  const [removingRound, setRemovingRound] = useState(false);
+  const [roundReason, setRoundReason] = useState('');
 
   const round = detail.data?.round;
   const harvests = useMemo(() => detail.data?.harvests ?? [], [detail.data]);
@@ -75,7 +86,23 @@ export default function RoundPage() {
     () => new Map(harvests.map(h => [h.treeId, h])),
     [harvests]
   );
-  const open = round?.status === 'IN_PROGRESS' || round?.status === 'DRAFT';
+  const removed = Boolean(round?.deletedAt);
+  const open =
+    !removed && (round?.status === 'IN_PROGRESS' || round?.status === 'DRAFT');
+  const complete_ = round?.status === 'COMPLETE' && !removed;
+  const canEdit = can('record.edit');
+  const canArchive = can('record.archive');
+  const canRestore = can('record.restore');
+  const removedHarvests = detail.data?.removedHarvests ?? [];
+  const correctingHarvest = correcting
+    ? harvestByTree.get(correcting)
+    : undefined;
+
+  /** Map server errors from corrections to plain language. */
+  const fixMessage = (e: unknown, stockKey: string) =>
+    e instanceof ApiError && e.code === 'CONFLICT' && /stock/i.test(e.message)
+      ? t(stockKey)
+      : t('removed.failed');
   const canRecord = can('harvest.record');
   const fmtDate = (iso: string) =>
     new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(
@@ -190,6 +217,31 @@ export default function RoundPage() {
         </Alert>
       )}
 
+      {round && removed && (
+        <Alert
+          severity='warning'
+          sx={{ mb: 2 }}
+          action={
+            canRestore ? (
+              <Button
+                color='inherit'
+                size='small'
+                disabled={fix.restoreRound.isLoading}
+                onClick={() =>
+                  void fix.restoreRound
+                    .mutateAsync(round)
+                    .catch(() => setNotice(null))
+                }
+              >
+                {t('removed.restoreRound')}
+              </Button>
+            ) : undefined
+          }
+        >
+          {t('removed.roundBanner')}
+        </Alert>
+      )}
+
       {round && (
         <Stack spacing={2}>
           <Stack
@@ -274,10 +326,23 @@ export default function RoundPage() {
                   divider={i < entries.length - 1}
                 >
                   <ListItemButton
-                    disabled={!open || !canRecord}
+                    disabled={
+                      open
+                        ? !canRecord
+                        : !(
+                            complete_ &&
+                            entry.state === 'RECORDED' &&
+                            (canEdit || canArchive)
+                          )
+                    }
                     onClick={() => {
-                      setCaptureError(null);
-                      setCurrent(entry.treeId);
+                      if (open) {
+                        setCaptureError(null);
+                        setCurrent(entry.treeId);
+                      } else {
+                        setFixError(null);
+                        setCorrecting(entry.treeId);
+                      }
                     }}
                     sx={{ borderRadius: 0, py: 1.5 }}
                   >
@@ -322,12 +387,70 @@ export default function RoundPage() {
             />
           )}
 
+          {removedHarvests.length > 0 && (
+            <Card component='section' aria-labelledby='removed-title'>
+              <CardContent sx={{ pb: 0 }}>
+                <Typography id='removed-title' variant='h3' component='h2'>
+                  {t('removed.title')}
+                </Typography>
+              </CardContent>
+              <List disablePadding>
+                {removedHarvests.map(h => (
+                  <ListItem
+                    key={h.id}
+                    divider
+                    secondaryAction={
+                      canRestore && !removed ? (
+                        <Button
+                          size='small'
+                          disabled={fix.restoreHarvest.isLoading}
+                          onClick={() =>
+                            void fix.restoreHarvest
+                              .mutateAsync(h)
+                              .catch(e =>
+                                setNotice(fixMessage(e, 'removed.failed'))
+                              )
+                          }
+                        >
+                          {t('removed.restore')}
+                        </Button>
+                      ) : undefined
+                    }
+                  >
+                    <ListItemText
+                      primary={t('removed.item', {
+                        code: h.treeCode,
+                        count: h.quantity ?? 0,
+                      })}
+                      secondary={h.deleteReason ?? undefined}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Card>
+          )}
+
           {roundId && (
             <EntityPhotos
               entityId={roundId}
               name={fmtDate(round.roundDate)}
               category='HARVEST_PILE'
             />
+          )}
+
+          {canArchive && !removed && !open && (
+            <Button
+              color='error'
+              variant='outlined'
+              onClick={() => {
+                setRoundReason('');
+                setFixError(null);
+                setRemovingRound(true);
+              }}
+              sx={{ alignSelf: 'flex-start' }}
+            >
+              {t('removed.removeRound')}
+            </Button>
           )}
 
           {!open && harvests.length === 0 && (
@@ -488,6 +611,61 @@ export default function RoundPage() {
               {t('review.confirm', { nuts: summary.totalNuts })}
             </Typography>
           )}
+        </FormDialog>
+      )}
+
+      {correctingHarvest && (
+        <CorrectHarvestDialog
+          open
+          treeCode={correctingHarvest.treeCode}
+          quantity={correctingHarvest.quantity ?? 0}
+          previousQuantity={correctingHarvest.previousQuantity}
+          canEdit={canEdit}
+          canRemove={canArchive}
+          saving={fix.correct.isLoading || fix.removeHarvest.isLoading}
+          error={fixError}
+          onSave={(quantity, reason) =>
+            void fix.correct
+              .mutateAsync({ harvest: correctingHarvest, quantity, reason })
+              .then(() => setCorrecting(null))
+              .catch(e => setFixError(fixMessage(e, 'correct.stockUsed')))
+          }
+          onRemove={reason =>
+            void fix.removeHarvest
+              .mutateAsync({ harvest: correctingHarvest, reason })
+              .then(() => setCorrecting(null))
+              .catch(e => setFixError(fixMessage(e, 'correct.stockUsed')))
+          }
+          onClose={() => setCorrecting(null)}
+        />
+      )}
+
+      {round && (
+        <FormDialog
+          open={removingRound}
+          title={t('removed.removeRoundTitle')}
+          submitLabel={t('removed.removeRoundYes')}
+          submittingLabel={t('removed.removing')}
+          cancelLabel={t('review.back')}
+          submitting={fix.removeRound.isLoading}
+          error={fixError}
+          onClose={() => setRemovingRound(false)}
+          onSubmit={() =>
+            void fix.removeRound
+              .mutateAsync({
+                round,
+                reason: roundReason.trim() === '' ? null : roundReason.trim(),
+              })
+              .then(() => setRemovingRound(false))
+              .catch(e => setFixError(fixMessage(e, 'removed.stockUsed')))
+          }
+        >
+          <Typography>{t('removed.removeRoundBody')}</Typography>
+          <TextField
+            label={t('removed.reason')}
+            value={roundReason}
+            onChange={e => setRoundReason(e.target.value)}
+          />
         </FormDialog>
       )}
     </AppPage>

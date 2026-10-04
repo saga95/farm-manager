@@ -1,8 +1,11 @@
-import { useRouter } from 'next/router';
+import { useState } from 'react';
 import NextLink from 'next/link';
+import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
 import Button from '@mui/material/Button';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Skeleton from '@mui/material/Skeleton';
+import Switch from '@mui/material/Switch';
 import AddOutlined from '@mui/icons-material/AddOutlined';
 import EventRepeatOutlined from '@mui/icons-material/EventRepeatOutlined';
 import { AppPage } from '@/components/AppPage';
@@ -15,8 +18,10 @@ import { useTenant } from '@/features/tenant';
 export default function RoundsPage() {
   const { t, i18n } = useTranslation('plucking');
   const router = useRouter();
-  const rounds = useRounds();
   const { can } = useTenant();
+  const canRestore = can('record.restore');
+  const [showRemoved, setShowRemoved] = useState(false);
+  const rounds = useRounds(canRestore && showRemoved);
   const fmt = (iso: string) =>
     new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(
       new Date(`${iso}T00:00:00`)
@@ -39,6 +44,18 @@ export default function RoundsPage() {
         ) : undefined
       }
     >
+      {canRestore && (
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showRemoved}
+              onChange={e => setShowRemoved(e.target.checked)}
+            />
+          }
+          label={t('rounds.showRemoved')}
+          sx={{ mb: 1 }}
+        />
+      )}
       {rounds.isLoading ? (
         <Skeleton variant='rounded' height={200} aria-hidden />
       ) : (
@@ -54,7 +71,7 @@ export default function RoundsPage() {
                     nuts: r.totalNuts ?? 0,
                   })
                 : t('rounds.summaryOpen', { count: r.plannedTreeIds.length }),
-            badge: t(`status.${r.status}`),
+            badge: r.deletedAt ? t('rounds.removed') : t(`status.${r.status}`),
           }))}
           onSelect={id => void router.push(`/coconut/rounds/${id}`)}
           empty={

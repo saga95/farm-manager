@@ -6,7 +6,9 @@
     "inProgress": "In progress",
     "summary": "{{trees}} trees · {{nuts}} nuts",
     "summaryOpen_one": "{{count}} tree planned",
-    "summaryOpen_other": "{{count}} trees planned"
+    "summaryOpen_other": "{{count}} trees planned",
+    "showRemoved": "Show removed rounds",
+    "removed": "Removed"
   },
   "status": {
     "DRAFT": "Draft",
@@ -77,5 +79,38 @@
     "plucker": "Plucker",
     "completedAt": "Completed",
     "noRecords": "No trees were recorded in this round."
+  },
+  "correct": {
+    "title": "Correct {{code}}",
+    "intro": "This round is complete. Changing the count also corrects the coconut stock from this round.",
+    "count": "Correct count",
+    "was": "Recorded: {{count}} nuts",
+    "previous": "Was {{count}}",
+    "reason": "Reason (optional)",
+    "save": "Save correction",
+    "saving": "Saving…",
+    "invalid": "Enter a whole number from 0 to 500.",
+    "remove": "Remove this record",
+    "removeConfirm": "Remove the record for {{code}}? Its nuts are taken out of totals, stock and predictions. An admin can restore it.",
+    "removeYes": "Remove record",
+    "cancel": "Close",
+    "noChange": "The count is the same.",
+    "stockUsed": "Some of these nuts were already sold, used or dehusked, so stock can't go that low. Adjust the stock first.",
+    "failed": "Couldn't save the correction. Please try again."
+  },
+  "removed": {
+    "title": "Removed records",
+    "item": "{{code}} · {{count}} nuts",
+    "restore": "Restore",
+    "roundBanner": "This round was removed. Its nuts are not counted in totals, stock or predictions.",
+    "restoreRound": "Restore round",
+    "removeRound": "Remove round",
+    "removeRoundTitle": "Remove this round?",
+    "removeRoundBody": "The round, its tree records and its coconut stock are taken out of totals and predictions. An admin can restore it.",
+    "removeRoundYes": "Remove round",
+    "removing": "Removing…",
+    "reason": "Reason (optional)",
+    "stockUsed": "Nuts from this round were already sold, used or dehusked, so it can't be removed. Adjust the stock first.",
+    "failed": "That didn't work. Reload and try again."
   }
 }

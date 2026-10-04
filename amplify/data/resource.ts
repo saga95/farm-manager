@@ -157,6 +157,8 @@ const schema = a.schema({
     totalNuts: a.integer(),
     batchId: a.id(),
     completedAt: a.string(),
+    deletedAt: a.string(),
+    deleteReason: a.string(),
     version: a.integer().required(),
     createdAt: a.string(),
     updatedAt: a.string(),
@@ -177,9 +179,13 @@ const schema = a.schema({
     notes: a.string(),
     photoIds: a.id().required().array(),
     source: a.string().required(),
+    previousQuantity: a.integer(),
+    deletedAt: a.string(),
+    deleteReason: a.string(),
     version: a.integer().required(),
     createdAt: a.string(),
     updatedAt: a.string(),
+    updatedBy: a.string(),
   }),
 
   ProduceBatch: a.customType({
@@ -202,6 +208,7 @@ const schema = a.schema({
   PluckingRoundDetail: a.customType({
     round: a.ref('PluckingRound').required(),
     harvests: a.ref('TreeHarvest').required().array().required(),
+    removedHarvests: a.ref('TreeHarvest').required().array().required(),
     samples: a.ref('CoconutSample').required().array().required(),
   }),
 
@@ -534,6 +541,7 @@ const schema = a.schema({
       tenantId: a.id().required(),
       farmId: a.id().required(),
       limit: a.integer(),
+      includeDeleted: a.boolean(),
     })
     .returns(a.ref('PluckingRound').required().array().required())
     .authorization(allow => [allow.authenticated()])
@@ -642,6 +650,70 @@ const schema = a.schema({
       notes: a.string(),
     })
     .returns(a.ref('CoconutSample').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  // ─── Corrections & soft delete (#56, #57, §31) ───────────────────────────
+  correctTreeHarvest: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      harvestId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      quantity: a.integer().required(),
+      recordQuality: a.string(),
+      notes: a.string(),
+      reason: a.string(),
+    })
+    .returns(a.ref('TreeHarvest').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  archiveTreeHarvest: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      harvestId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      reason: a.string(),
+    })
+    .returns(a.ref('TreeHarvest').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  restoreTreeHarvest: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      harvestId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      reason: a.string(),
+    })
+    .returns(a.ref('TreeHarvest').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  archivePluckingRound: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      roundId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      reason: a.string(),
+    })
+    .returns(a.ref('PluckingRound').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  restorePluckingRound: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      roundId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      reason: a.string(),
+    })
+    .returns(a.ref('PluckingRound').required())
     .authorization(allow => [allow.authenticated()])
     .handler(a.handler.function(farmApi)),
 
