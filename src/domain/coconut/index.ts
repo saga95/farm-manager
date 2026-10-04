@@ -118,3 +118,59 @@ export function generateTreeCodes({
 export function compareTreeCodes(a: string, b: string): number {
   return a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' });
 }
+
+// ─── Tree yield summary (§7.2, CALC-002/003) ───────────────────────────────────
+
+export interface YieldHarvest {
+  harvestDate: string;
+  quantity?: number | null;
+  deletedAt?: string | null;
+}
+
+export interface TreeYieldSummary {
+  /** Valid recorded harvests (quantity present, not deleted) */
+  harvestCount: number;
+  lifetimeTotal: number;
+  currentYearTotal: number;
+  /** CALC-003: total / count; null without records (no history ≠ 0) */
+  averagePerHarvest: number | null;
+  best: number | null;
+  lastHarvestDate: string | null;
+  lastQuantity: number | null;
+  daysSinceLast: number | null;
+}
+
+export function treeYieldSummary(
+  harvests: readonly YieldHarvest[],
+  today: string
+): TreeYieldSummary {
+  const valid = harvests
+    .filter(h => !h.deletedAt && h.quantity != null)
+    .sort((a, b) => a.harvestDate.localeCompare(b.harvestDate));
+  const year = today.slice(0, 4);
+  const total = valid.reduce((s, h) => s + (h.quantity as number), 0);
+  const last = valid.at(-1);
+  const dayMs = 86_400_000;
+  return {
+    harvestCount: valid.length,
+    lifetimeTotal: total,
+    currentYearTotal: valid
+      .filter(h => h.harvestDate.startsWith(year))
+      .reduce((s, h) => s + (h.quantity as number), 0),
+    averagePerHarvest: valid.length
+      ? Math.round((total / valid.length) * 10) / 10
+      : null,
+    best: valid.length
+      ? Math.max(...valid.map(h => h.quantity as number))
+      : null,
+    lastHarvestDate: last?.harvestDate ?? null,
+    lastQuantity: last ? (last.quantity as number) : null,
+    daysSinceLast: last
+      ? Math.round(
+          (Date.parse(`${today}T00:00:00Z`) -
+            Date.parse(`${last.harvestDate}T00:00:00Z`)) /
+            dayMs
+        )
+      : null,
+  };
+}

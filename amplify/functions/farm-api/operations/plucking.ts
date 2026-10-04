@@ -45,6 +45,7 @@ import {
 import { ddb, tableName } from '../lib/db';
 import { ApiError, notFound } from '../lib/errors';
 import { type TenantContext, tenantOperation } from '../lib/operation';
+import { refreshTreeSnapshot } from '../lib/treeSnapshot';
 
 const id = z.string().refine(isUlid, 'must be a ULID');
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must be YYYY-MM-DD');
@@ -395,6 +396,7 @@ export const recordTreeHarvest = tenantOperation({
             ],
           })
         );
+        await refreshTreeSnapshot(ctx, input.treeId);
         return toView(harvest);
       } catch (e) {
         if (!(e instanceof TransactionCanceledException)) throw e;
@@ -422,6 +424,7 @@ export const recordTreeHarvest = tenantOperation({
       changes: values,
       action: 'harvest.update',
     });
+    await refreshTreeSnapshot(ctx, input.treeId);
     return toView(updated);
   },
 });

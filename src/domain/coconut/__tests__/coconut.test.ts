@@ -4,6 +4,7 @@ import {
   generateTreeCodes,
   isValidTreeCode,
   normalizeTreeCode,
+  treeYieldSummary,
 } from '..';
 
 describe('tree codes (Q-001)', () => {
@@ -62,6 +63,49 @@ describe('crop catalogue (§6.1)', () => {
     expect(SYSTEM_CROPS.COCONUT).toMatchObject({
       trackingStrategy: 'PERMANENT_INDIVIDUAL',
       defaultHarvestUnit: 'NUT',
+    });
+  });
+});
+
+describe('treeYieldSummary (§7.2, CALC-002/003)', () => {
+  it('summarises valid harvests only', () => {
+    const s = treeYieldSummary(
+      [
+        { harvestDate: '2025-12-01', quantity: 20 },
+        { harvestDate: '2026-02-01', quantity: 14 },
+        { harvestDate: '2026-04-01', quantity: 26 },
+        { harvestDate: '2026-05-01', quantity: null },
+        { harvestDate: '2026-06-01', quantity: 99, deletedAt: 'x' },
+      ],
+      '2026-06-11'
+    );
+    expect(s).toEqual({
+      harvestCount: 3,
+      lifetimeTotal: 60,
+      currentYearTotal: 40,
+      averagePerHarvest: 20,
+      best: 26,
+      lastHarvestDate: '2026-04-01',
+      lastQuantity: 26,
+      daysSinceLast: 71,
+    });
+  });
+
+  it('distinguishes "no history" (nulls) from a recorded zero', () => {
+    expect(treeYieldSummary([], '2026-06-11')).toMatchObject({
+      harvestCount: 0,
+      averagePerHarvest: null,
+      best: null,
+    });
+    expect(
+      treeYieldSummary(
+        [{ harvestDate: '2026-06-01', quantity: 0 }],
+        '2026-06-11'
+      )
+    ).toMatchObject({
+      harvestCount: 1,
+      averagePerHarvest: 0,
+      best: 0,
     });
   });
 });

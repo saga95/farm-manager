@@ -2,7 +2,10 @@
  * Minimal in-memory FarmData for handler tests: Get, BatchGet, Query (PK/GSI1
  * equality) and TransactWrite with attribute_not_exists conditions.
  */
-import { TransactionCanceledException } from '@aws-sdk/client-dynamodb';
+import {
+  ConditionalCheckFailedException,
+  TransactionCanceledException,
+} from '@aws-sdk/client-dynamodb';
 import {
   BatchGetCommand,
   DynamoDBDocumentClient,
@@ -10,6 +13,7 @@ import {
   PutCommand,
   QueryCommand,
   TransactWriteCommand,
+  UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 
@@ -28,6 +32,31 @@ export function installFakeDdb() {
   mock.on(PutCommand).callsFake(input => {
     const item = input.Item as Item;
     store.set(k(item['PK'], item['SK']), structuredClone(item));
+    return {};
+  });
+
+  // Supports `SET a = :x, b = :y` with an optional `tenantId = :tenant` condition.
+  mock.on(UpdateCommand).callsFake(input => {
+    const key = k(input.Key?.['PK'], input.Key?.['SK']);
+    const existing = store.get(key);
+    const values = input.ExpressionAttributeValues ?? {};
+    if (
+      !existing ||
+      (String(input.ConditionExpression ?? '').includes('tenantId = :tenant') &&
+        existing['tenantId'] !== values[':tenant'])
+    ) {
+      throw new ConditionalCheckFailedException({
+        message: 'Condition failed',
+        $metadata: {},
+      });
+    }
+    const assignments = String(input.UpdateExpression)
+      .replace(/^SET\s+/, '')
+      .split(',');
+    for (const a of assignments) {
+      const [attr, ref] = a.split('=').map(x => x.trim());
+      existing[attr as string] = structuredClone(values[ref as string]);
+    }
     return {};
   });
 
