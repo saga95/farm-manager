@@ -22,7 +22,7 @@ describe('media object keys (ADR-0003 §2)', () => {
     expect(k.original).toBe(
       `tenants/${T}/farms/${base.farmId}/TREE_PROFILE/TREE/${base.entityId}/${base.mediaId}/original.jpg`
     );
-    expect(k.thumb).toMatch(/\/thumb\.webp$/);
+    expect(k.thumb).toMatch(/\/thumb$/);
     expect(keyBelongsToTenant(k.original, T)).toBe(true);
     expect(keyBelongsToTenant(k.original, '01J9ZQ3M5K8R2V7W4X6Y0A1B2D')).toBe(
       false

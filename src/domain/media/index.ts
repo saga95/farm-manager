@@ -3,8 +3,9 @@
  *
  * Photos are private farm records. Object keys are tenant-prefixed and built
  * ONLY here, so a handler that builds keys from the authorized tenant can never
- * address another tenant's files. The client uploads a 480 px WebP thumbnail
- * next to the original (ADR-0003 amendment), so lists never load originals.
+ * address another tenant's files. The client uploads a 480 px thumbnail (WebP,
+ * or JPEG where the browser can't encode WebP) next to the original (ADR-0003
+ * amendment), so lists never load originals.
  */
 
 export const MEDIA_CATEGORIES = [
@@ -51,7 +52,7 @@ export type MediaStatus = (typeof MEDIA_STATUSES)[number];
 
 /** 15 MB per original (ADR-0003). */
 export const MAX_MEDIA_BYTES = 15 * 1024 * 1024;
-/** Thumbnails are small WebP files. */
+/** Thumbnails are small WebP/JPEG files. */
 export const MAX_THUMB_BYTES = 512 * 1024;
 /** Longest edge of a thumbnail, in px. */
 export const THUMB_MAX_EDGE = 480;
@@ -100,7 +101,7 @@ export function mediaObjectKeys(p: {
   ].join('/');
   return {
     original: `${base}/original.${MEDIA_CONTENT_TYPES[p.contentType]}`,
-    thumb: `${base}/thumb.webp`,
+    thumb: `${base}/thumb`,
   };
 }
 

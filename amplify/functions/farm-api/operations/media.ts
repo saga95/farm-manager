@@ -82,7 +82,7 @@ async function signUploads(ctx: TenantContext, item: Item) {
     presignUpload(
       tenantId,
       String(item['thumbnailKey']),
-      'image/webp',
+      { startsWith: 'image/' },
       MAX_THUMB_BYTES
     ),
   ]);

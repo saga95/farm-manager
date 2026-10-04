@@ -589,3 +589,83 @@ export const recordCoconutSample = async (
   unwrap(
     await mu('recordCoconutSample')({ tenantId, ...input })
   ) as CoconutSample;
+
+// ─── Media (#46–#49, ADR-0003) ──────────────────────────────────────────────
+
+export interface Media {
+  id: string;
+  entityId: string;
+  targetType: string;
+  entityLabel?: string | null;
+  category: string;
+  contentType: string;
+  byteSize?: number | null;
+  capturedAt?: string | null;
+  caption?: string | null;
+  status: 'PENDING' | 'READY' | 'FAILED' | string;
+  thumbUrl?: string | null;
+  version: number;
+  createdAt?: string | null;
+}
+
+export interface PresignedPost {
+  url: string;
+  fields: Record<string, string>;
+}
+
+export interface MediaUploadTarget {
+  media: Media;
+  /** null when the photo was already uploaded (idempotent retry) */
+  upload: { original: PresignedPost; thumb: PresignedPost } | null;
+}
+
+export const initiateMediaUpload = async (
+  tenantId: string,
+  input: {
+    mediaId: string;
+    entityId: string;
+    category?: string | null;
+    contentType: string;
+    byteSize: number;
+    capturedAt?: string | null;
+    caption?: string | null;
+  }
+): Promise<MediaUploadTarget> => {
+  const res = unwrap(
+    await mu('initiateMediaUpload')({ tenantId, ...input })
+  ) as {
+    media: Media;
+    upload?: string | MediaUploadTarget['upload'];
+  };
+  const upload =
+    typeof res.upload === 'string'
+      ? (JSON.parse(res.upload) as MediaUploadTarget['upload'])
+      : (res.upload ?? null);
+  return { media: res.media, upload };
+};
+
+export const completeMediaUpload = async (
+  tenantId: string,
+  entityId: string,
+  mediaId: string
+) =>
+  unwrap(
+    await mu('completeMediaUpload')({ tenantId, entityId, mediaId })
+  ) as Media;
+
+export const listMedia = async (tenantId: string, entityId: string) => [
+  ...(unwrap(await q('listMedia')({ tenantId, entityId })) as Media[]),
+];
+
+export const getMediaOriginalUrl = async (tenantId: string, mediaId: string) =>
+  unwrap(await q('getMediaOriginalUrl')({ tenantId, mediaId })) as string;
+
+export const archiveMedia = async (tenantId: string, media: Media) =>
+  unwrap(
+    await mu('archiveMedia')({
+      tenantId,
+      entityId: media.entityId,
+      mediaId: media.id,
+      expectedVersion: media.version,
+    })
+  ) as Media;

@@ -19,6 +19,7 @@ import ErrorBoundary, {
 import { ToastProvider } from '@/components/Toast';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { RBACProvider } from '@/contexts/RBACContext';
+import { MediaUploadProvider } from '@/features/media/MediaUploadProvider';
 import { TenantProvider } from '@/features/tenant';
 import { resolveProfileFromCognitoGroups } from '@/rbac';
 import '@/lib/i18n'; // Initialize i18n
@@ -144,14 +145,16 @@ export default function App(props: AppProps) {
             <AuthenticatedRBACProvider>
               <QueryClientProvider client={queryClient}>
                 <TenantProvider>
-                  <ErrorBoundary level='app'>
-                    <ToastProvider>
-                      <SkipLink />
-                      <RouteErrorBoundary>
-                        <Component {...pageProps} />
-                      </RouteErrorBoundary>
-                    </ToastProvider>
-                  </ErrorBoundary>
+                  <MediaUploadProvider>
+                    <ErrorBoundary level='app'>
+                      <ToastProvider>
+                        <SkipLink />
+                        <RouteErrorBoundary>
+                          <Component {...pageProps} />
+                        </RouteErrorBoundary>
+                      </ToastProvider>
+                    </ErrorBoundary>
+                  </MediaUploadProvider>
                 </TenantProvider>
               </QueryClientProvider>
             </AuthenticatedRBACProvider>

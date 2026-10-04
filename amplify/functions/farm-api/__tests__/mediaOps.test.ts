@@ -10,7 +10,7 @@ import { installFakeDdb } from './fakeDdb';
 const objects = new Map<string, number>();
 jest.mock('../lib/objectStore', () => ({
   presignUpload: jest.fn(
-    async (_t: string, key: string, contentType: string) => ({
+    async (_t: string, key: string, contentType: unknown) => ({
       url: 'https://bucket.example/upload',
       fields: { key, 'Content-Type': contentType },
     })
@@ -139,7 +139,7 @@ describe('media upload (#46, ADR-0003)', () => {
       capturedAt: string;
     };
     expect(done.status).toBe('READY');
-    expect(done.thumbUrl).toContain('thumb.webp');
+    expect(done.thumbUrl).toContain('/thumb?sig');
     expect(done.capturedAt).toBe('2026-09-01T07:30:00+05:30');
 
     const list = (await call('listMedia', {
@@ -147,7 +147,7 @@ describe('media upload (#46, ADR-0003)', () => {
       entityId: treeId,
     })) as { thumbUrl: string }[];
     expect(list).toHaveLength(1);
-    expect(list[0]!.thumbUrl).toContain('thumb.webp');
+    expect(list[0]!.thumbUrl).toContain('/thumb?sig');
     expect(JSON.stringify(list)).not.toContain('original.jpg');
   });
 

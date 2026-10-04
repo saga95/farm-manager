@@ -33,6 +33,7 @@ import { useTrees } from '@/features/coconut/hooks';
 import { CaptureDialog } from '@/features/plucking/components/CaptureDialog';
 import { TreePicker } from '@/features/plucking/components/TreePicker';
 import { useRound, useRoundActions } from '@/features/plucking/hooks';
+import { EntityPhotos } from '@/features/media/components/EntityPhotos';
 import { RoundSamplesCard } from '@/features/samples/components/RoundSamplesCard';
 import { useTenant } from '@/features/tenant';
 import { ApiError } from '@/lib/api';
@@ -318,6 +319,14 @@ export default function RoundPage() {
               samples={detail.data?.samples ?? []}
               order={round.plannedTreeIds}
               canRecord={can('sample.record')}
+            />
+          )}
+
+          {roundId && (
+            <EntityPhotos
+              entityId={roundId}
+              name={fmtDate(round.roundDate)}
+              category='HARVEST_PILE'
             />
           )}
 
