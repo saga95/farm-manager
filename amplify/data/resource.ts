@@ -1171,11 +1171,173 @@ const sales = a.schema({
     .handler(a.handler.function(farmApi)),
 });
 
+/**
+ * Growing bounded context: production cycles and farm activities
+ * (§6.3, §14, §41.3–41.4). Refs stay inside this schema (ADR-0005).
+ */
+const growing = a.schema({
+  ProductionCycle: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    farmId: a.id().required(),
+    zoneId: a.id().required(),
+    zoneName: a.string(),
+    growingSpaceId: a.id(),
+    name: a.string().required(),
+    cropName: a.string().required(),
+    cropCode: a.string().required(),
+    variety: a.string(),
+    plantedAt: a.string(),
+    expectedEndAt: a.string(),
+    endedAt: a.string(),
+    estimatedPlantCount: a.integer(),
+    areaUsed: a.float(),
+    areaUnit: a.string(),
+    notes: a.string(),
+    status: a.string().required(),
+    activityCount: a.integer(),
+    harvestCount: a.integer(),
+    harvestTotals: a.json(),
+    lastActivityAt: a.string(),
+    lastHarvestAt: a.string(),
+    version: a.integer().required(),
+    createdAt: a.string(),
+    updatedAt: a.string(),
+  }),
+
+  FarmActivity: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    farmId: a.id().required(),
+    targetId: a.id().required(),
+    targetType: a.string().required(),
+    productionCycleId: a.id(),
+    zoneId: a.id(),
+    activityType: a.string().required(),
+    activityDate: a.string().required(),
+    notes: a.string(),
+    quantity: a.float(),
+    unit: a.string(),
+    materialName: a.string(),
+    inputItemId: a.id(),
+    version: a.integer().required(),
+    createdAt: a.string(),
+    createdBy: a.string(),
+  }),
+
+  CycleDetail: a.customType({
+    cycle: a.ref('ProductionCycle').required(),
+    activities: a.ref('FarmActivity').required().array().required(),
+  }),
+
+  listCycles: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      includeClosed: a.boolean(),
+      zoneId: a.id(),
+    })
+    .returns(a.ref('ProductionCycle').required().array().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  getCycle: a
+    .query()
+    .arguments({ tenantId: a.id().required(), cycleId: a.id().required() })
+    .returns(a.ref('CycleDetail').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  createCycle: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      cycleId: a.id().required(),
+      status: a.string(),
+      name: a.string().required(),
+      cropName: a.string().required(),
+      variety: a.string(),
+      zoneId: a.id().required(),
+      growingSpaceId: a.id(),
+      plantedAt: a.string(),
+      expectedEndAt: a.string(),
+      estimatedPlantCount: a.integer(),
+      areaUsed: a.float(),
+      areaUnit: a.string(),
+      notes: a.string(),
+    })
+    .returns(a.ref('ProductionCycle').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  updateCycle: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      cycleId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      status: a.string(),
+      statusDate: a.string(),
+      name: a.string(),
+      cropName: a.string(),
+      variety: a.string(),
+      zoneId: a.id(),
+      growingSpaceId: a.id(),
+      plantedAt: a.string(),
+      expectedEndAt: a.string(),
+      estimatedPlantCount: a.integer(),
+      areaUsed: a.float(),
+      areaUnit: a.string(),
+      notes: a.string(),
+    })
+    .returns(a.ref('ProductionCycle').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  recordActivity: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      activityId: a.id().required(),
+      targetId: a.id().required(),
+      activityType: a.string().required(),
+      activityDate: a.string().required(),
+      notes: a.string(),
+      quantity: a.float(),
+      unit: a.string(),
+      materialName: a.string(),
+      inputItemId: a.id(),
+    })
+    .returns(a.ref('FarmActivity').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  listActivities: a
+    .query()
+    .arguments({ tenantId: a.id().required(), targetId: a.id().required() })
+    .returns(a.ref('FarmActivity').required().array().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  archiveActivity: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      activityId: a.id().required(),
+      expectedVersion: a.integer().required(),
+    })
+    .returns(a.ref('FarmActivity').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+});
+
 /** Client typing for the core schema (the web client uses untyped calls). */
 export type Schema = ClientSchema<typeof schema>;
 
 export const data = defineData({
-  schema: a.combine([schema, stock, sales]),
+  schema: a.combine([schema, stock, sales, growing]),
   authorizationModes: {
     defaultAuthorizationMode: 'userPool',
   },

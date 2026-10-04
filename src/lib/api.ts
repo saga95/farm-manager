@@ -1172,3 +1172,120 @@ export const listSales = async (
   ) as { sales: Sale[]; nextToken?: string | null };
   return { sales: [...d.sales], nextToken: d.nextToken ?? null };
 };
+
+// ─── Production cycles & activities (#91–#94) ───────────────────────────────
+
+export interface ProductionCycle {
+  id: string;
+  farmId: string;
+  zoneId: string;
+  zoneName?: string | null;
+  growingSpaceId?: string | null;
+  name: string;
+  cropName: string;
+  cropCode: string;
+  variety?: string | null;
+  plantedAt?: string | null;
+  expectedEndAt?: string | null;
+  endedAt?: string | null;
+  estimatedPlantCount?: number | null;
+  areaUsed?: number | null;
+  areaUnit?: string | null;
+  notes?: string | null;
+  status: string;
+  activityCount?: number | null;
+  harvestCount?: number | null;
+  lastActivityAt?: string | null;
+  lastHarvestAt?: string | null;
+  version: number;
+}
+
+export interface FarmActivity {
+  id: string;
+  targetId: string;
+  targetType: string;
+  activityType: string;
+  activityDate: string;
+  notes?: string | null;
+  quantity?: number | null;
+  unit?: string | null;
+  materialName?: string | null;
+  inputItemId?: string | null;
+  version: number;
+  createdAt?: string | null;
+}
+
+export interface CycleFields {
+  name: string;
+  cropName: string;
+  variety: string | null;
+  zoneId: string;
+  growingSpaceId: string | null;
+  plantedAt: string | null;
+  expectedEndAt: string | null;
+  estimatedPlantCount: number | null;
+  areaUsed: number | null;
+  areaUnit: string | null;
+  notes: string | null;
+}
+
+export const listCycles = async (
+  tenantId: string,
+  farmId: string,
+  includeClosed = false
+) => [
+  ...(unwrap(
+    await q('listCycles')({ tenantId, farmId, includeClosed })
+  ) as ProductionCycle[]),
+];
+
+export const getCycle = async (tenantId: string, cycleId: string) => {
+  const d = unwrap(await q('getCycle')({ tenantId, cycleId })) as {
+    cycle: ProductionCycle;
+    activities: FarmActivity[];
+  };
+  return { cycle: d.cycle, activities: [...d.activities] };
+};
+
+export const createCycle = async (
+  tenantId: string,
+  input: CycleFields & { farmId: string; cycleId: string; status: string }
+) => unwrap(await mu('createCycle')({ tenantId, ...input })) as ProductionCycle;
+
+export const updateCycle = async (
+  tenantId: string,
+  cycle: ProductionCycle,
+  changes: Partial<CycleFields> & { status?: string; statusDate?: string }
+) =>
+  unwrap(
+    await mu('updateCycle')({
+      tenantId,
+      cycleId: cycle.id,
+      expectedVersion: cycle.version,
+      ...changes,
+    })
+  ) as ProductionCycle;
+
+export interface ActivityInput {
+  activityId: string;
+  targetId: string;
+  activityType: string;
+  activityDate: string;
+  notes: string | null;
+  quantity: number | null;
+  unit: string | null;
+  materialName: string | null;
+  inputItemId: string | null;
+}
+
+export const recordActivity = async (tenantId: string, input: ActivityInput) =>
+  unwrap(await mu('recordActivity')({ tenantId, ...input })) as FarmActivity;
+
+export const archiveActivity = async (tenantId: string, a: FarmActivity) =>
+  unwrap(
+    await mu('archiveActivity')({
+      tenantId,
+      activityId: a.id,
+      expectedVersion: a.version,
+    })
+  ) as FarmActivity;

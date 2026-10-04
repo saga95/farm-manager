@@ -14,6 +14,15 @@ import {
   restoreTreeHarvest,
 } from './corrections';
 import { createBuyer, getBuyer, listBuyers, updateBuyer } from './buyers';
+import {
+  archiveActivity,
+  createCycle,
+  getCycle,
+  listActivities,
+  listCycles,
+  recordActivity,
+  updateCycle,
+} from './cycles';
 import { createTenant } from './createTenant';
 import {
   createInputItem,
@@ -109,6 +118,13 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       restoreSale,
       getSale,
       listSales,
+      listCycles,
+      getCycle,
+      createCycle,
+      updateCycle,
+      recordActivity,
+      listActivities,
+      archiveActivity,
       getTreeHistory,
       listDueTrees,
       recordCoconutSample,

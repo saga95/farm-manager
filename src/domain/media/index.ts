@@ -28,6 +28,8 @@ export const MEDIA_ENTITY_TYPES = {
   CoconutSample: 'SAMPLE',
   PluckingRound: 'ROUND',
   Sale: 'SALE',
+  ProductionCycle: 'CYCLE',
+  FarmActivity: 'ACTIVITY',
 } as const;
 export type MediaEntityType =
   (typeof MEDIA_ENTITY_TYPES)[keyof typeof MEDIA_ENTITY_TYPES];
@@ -39,6 +41,8 @@ export const DEFAULT_CATEGORY: Record<MediaEntityType, MediaCategory> = {
   SAMPLE: 'DEHUSKED_SAMPLE',
   ROUND: 'GENERAL',
   SALE: 'SALE_LOT',
+  CYCLE: 'CROP_PROGRESS',
+  ACTIVITY: 'CROP_PROGRESS',
 };
 
 export const MEDIA_CONTENT_TYPES = {
