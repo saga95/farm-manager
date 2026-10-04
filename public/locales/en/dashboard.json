@@ -5,17 +5,23 @@
   "coconut": {
     "title": "Coconut",
     "empty": "No trees registered yet.",
-    "cta": "Register trees"
+    "cta": "Register trees",
+    "producing": "producing trees",
+    "registered": "registered",
+    "view": "View trees"
   },
   "nextPlucking": {
     "title": "Next plucking",
     "empty": "Not enough history yet. Estimates appear after a few recorded rounds.",
-    "cta": "Plan a round"
+    "cta": "Plan a round",
+    "overdue": "overdue",
+    "dueSoon": "due soon"
   },
   "produce": {
     "title": "Produce available",
     "empty": "No produce recorded yet.",
-    "cta": "View inventory"
+    "cta": "View inventory",
+    "coconuts": "coconuts in stock"
   },
   "sales": {
     "title": "Sales this month",

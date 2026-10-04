@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
 import { ulid } from 'ulid';
@@ -29,7 +29,15 @@ export default function NewRoundPage() {
   const [roundId] = useState(ulid); // stable per visit: a retried start replays
   const [date, setDate] = useState(() => todayIso(farm?.timezone));
   const [plucker, setPlucker] = useState('');
+  // Preselected from the planning view (?trees=id1,id2), order kept
   const [selected, setSelected] = useState<string[]>([]);
+  const preselect =
+    typeof router.query['trees'] === 'string' ? router.query['trees'] : '';
+  useEffect(() => {
+    if (!preselect || !trees.data) return;
+    const valid = new Set(trees.data.map(tr => tr.id));
+    setSelected(preselect.split(',').filter(id => valid.has(id)));
+  }, [preselect, trees.data]);
   const [error, setError] = useState<string | null>(null);
   const zoneName = useMemo(
     () => new Map((zones.data ?? []).map(z => [z.id, z.name])),

@@ -87,3 +87,10 @@ test.describe('Plucking screens', () => {
     });
   }
 });
+
+test('/coconut/planning requires sign-in', async ({ page }) => {
+  await page.goto('/coconut/planning');
+  await expect(page).toHaveURL(
+    /\/auth\/login\?redirect=%2Fcoconut%2Fplanning$/
+  );
+});

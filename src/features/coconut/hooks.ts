@@ -7,6 +7,8 @@ import {
   bulkCreateTrees,
   createTree,
   getTree,
+  getTreeHistory,
+  listDueTrees,
   listTrees,
   updateTree,
 } from '@/lib/api';
@@ -70,5 +72,25 @@ export function useBulkCreateTrees() {
       return bulkCreateTrees(tenantId, farm.id, input);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['trees', tenantId] }),
+  });
+}
+
+export function useTreeHistory(treeId: string | undefined) {
+  const { tenantId } = useCurrentFarm();
+  return useQuery({
+    queryKey: ['treeHistory', tenantId, treeId],
+    queryFn: () => getTreeHistory(tenantId, treeId as string),
+    enabled: Boolean(tenantId && treeId),
+    retry: false,
+  });
+}
+
+export function useDueTrees() {
+  const { tenantId, farm } = useCurrentFarm();
+  const farmId = farm?.id ?? '';
+  return useQuery({
+    queryKey: ['dueTrees', tenantId, farmId],
+    queryFn: () => listDueTrees(tenantId, farmId),
+    enabled: Boolean(tenantId && farmId),
   });
 }

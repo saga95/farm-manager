@@ -74,5 +74,56 @@
     "code": "Use letters, numbers and hyphens (max 20)",
     "conflict": "Someone else changed this tree. Close the form and try again.",
     "failed": "Couldn't save. Please try again."
+  },
+  "history": {
+    "title": "Harvest history",
+    "lastPlucked": "Last plucked",
+    "daysAgo_one": "{{count}} day ago",
+    "daysAgo_other": "{{count}} days ago",
+    "lastCount": "Last harvest",
+    "average": "Average per harvest",
+    "best": "Best harvest",
+    "lifetime": "All recorded",
+    "thisYear": "This year",
+    "records": "Recorded harvests",
+    "nuts": "nuts",
+    "none": "—",
+    "approximate": "Approximate",
+    "viewRound": "View round"
+  },
+  "prediction": {
+    "title": "Next plucking",
+    "estimate": "Around {{date}}",
+    "window": "Likely between {{start}} and {{end}}",
+    "notEnough": "Not enough history yet",
+    "notEnoughBody": "An estimate appears after at least two recorded pluckings of this tree.",
+    "confidence": {
+      "LOW": "Low confidence",
+      "MEDIUM": "Medium confidence",
+      "HIGH": "High confidence",
+      "NO_PREDICTION": "No estimate"
+    },
+    "why": "Why this estimate?",
+    "explain_one": "Estimated from {{count}} recorded interval. Median interval: {{median}} days. Last plucked: {{last}}.",
+    "explain_other": "Estimated from {{count}} recorded intervals. Median interval: {{median}} days. Last plucked: {{last}}.",
+    "inconsistent": "Intervals vary a lot for this tree, so confidence was lowered one level.",
+    "method": "Method: {{method}}"
+  },
+  "planning": {
+    "title": "Plan next plucking",
+    "intro": "Trees grouped by when they are likely due. Select the ones for the next visit and start a round.",
+    "buckets": {
+      "OVERDUE": "Overdue",
+      "DUE_SOON": "Due soon",
+      "UPCOMING": "Upcoming",
+      "NOT_ENOUGH_HISTORY": "Not enough history"
+    },
+    "row": "Last plucked {{last}} · {{qty}} nuts",
+    "rowNever": "Never plucked in this app",
+    "due": "Due around {{date}}",
+    "start_one": "Start round with {{count}} tree",
+    "start_other": "Start round with {{count}} trees",
+    "empty": "No producing trees yet.",
+    "selectAll": "Select all in this group"
   }
 }

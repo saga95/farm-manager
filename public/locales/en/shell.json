@@ -35,7 +35,8 @@
     "rounds": "Plucking rounds",
     "zones": "Zones",
     "spaces": "Growing spaces",
-    "cycles": "Production cycles"
+    "cycles": "Production cycles",
+    "planning": "Plan next plucking"
   },
   "sales": {
     "history": "Sales history",

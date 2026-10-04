@@ -8,7 +8,9 @@
 import NextLink from 'next/link';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import EventRepeatOutlined from '@mui/icons-material/EventRepeatOutlined';
 import GrassOutlined from '@mui/icons-material/GrassOutlined';
@@ -25,6 +27,25 @@ import { QUICK_ACTIONS } from '@/components/ui/AppShell/navigation';
 
 export interface FarmDashboardProps {
   farmName: string;
+  /** Live figures; omitted/undefined sections show honest empty states (PR-007) */
+  coconut?: { registered: number; producing: number } | undefined;
+  nextPlucking?:
+    | { overdue: number; dueSoon: number; noHistory: number }
+    | undefined;
+  produce?: { coconutsAvailable: number } | undefined;
+}
+
+function Figure({ value, label }: { value: number; label: string }) {
+  return (
+    <Box>
+      <Typography variant='h2' component='p'>
+        {value}
+      </Typography>
+      <Typography variant='body2' color='text.secondary'>
+        {label}
+      </Typography>
+    </Box>
+  );
 }
 
 function QuickActionTiles() {
@@ -111,7 +132,12 @@ function QuickActionTiles() {
   );
 }
 
-export function FarmDashboard({ farmName }: FarmDashboardProps) {
+export function FarmDashboard({
+  farmName,
+  coconut,
+  nextPlucking,
+  produce,
+}: FarmDashboardProps) {
   const { t } = useTranslation('dashboard');
 
   return (
@@ -137,29 +163,86 @@ export function FarmDashboard({ farmName }: FarmDashboardProps) {
           title={t('coconut.title')}
           icon={<ParkOutlined fontSize='small' />}
         >
-          <EmptyState
-            message={t('coconut.empty')}
-            action={{ label: t('coconut.cta'), href: '/coconut/trees/bulk' }}
-          />
+          {coconut && coconut.registered > 0 ? (
+            <Stack spacing={1.5}>
+              <Stack direction='row' spacing={3}>
+                <Figure
+                  value={coconut.producing}
+                  label={t('coconut.producing')}
+                />
+                <Figure
+                  value={coconut.registered}
+                  label={t('coconut.registered')}
+                />
+              </Stack>
+              <Button
+                component={NextLink}
+                href='/coconut/trees'
+                size='small'
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                {t('coconut.view')}
+              </Button>
+            </Stack>
+          ) : (
+            <EmptyState
+              message={t('coconut.empty')}
+              action={{ label: t('coconut.cta'), href: '/coconut/trees/bulk' }}
+            />
+          )}
         </SummaryCard>
         <SummaryCard
           title={t('nextPlucking.title')}
           icon={<EventRepeatOutlined fontSize='small' />}
         >
-          <EmptyState
-            message={t('nextPlucking.empty')}
-            action={{ label: t('nextPlucking.cta'), href: '/coconut/planning' }}
-          />
+          {nextPlucking && nextPlucking.overdue + nextPlucking.dueSoon > 0 ? (
+            <Stack spacing={1.5}>
+              <Stack direction='row' spacing={3}>
+                <Figure
+                  value={nextPlucking.overdue}
+                  label={t('nextPlucking.overdue')}
+                />
+                <Figure
+                  value={nextPlucking.dueSoon}
+                  label={t('nextPlucking.dueSoon')}
+                />
+              </Stack>
+              <Button
+                component={NextLink}
+                href='/coconut/planning'
+                variant='outlined'
+                size='small'
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                {t('nextPlucking.cta')}
+              </Button>
+            </Stack>
+          ) : (
+            <EmptyState
+              message={t('nextPlucking.empty')}
+              action={{
+                label: t('nextPlucking.cta'),
+                href: '/coconut/planning',
+              }}
+            />
+          )}
         </SummaryCard>
         <SummaryCard
           title={t('produce.title')}
           icon={<Inventory2Outlined fontSize='small' />}
           tone='secondary'
         >
-          <EmptyState
-            message={t('produce.empty')}
-            action={{ label: t('produce.cta'), href: '/inventory' }}
-          />
+          {produce && produce.coconutsAvailable > 0 ? (
+            <Figure
+              value={produce.coconutsAvailable}
+              label={t('produce.coconuts')}
+            />
+          ) : (
+            <EmptyState
+              message={t('produce.empty')}
+              action={{ label: t('produce.cta'), href: '/inventory' }}
+            />
+          )}
         </SummaryCard>
         <SummaryCard
           title={t('sales.title')}
