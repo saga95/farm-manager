@@ -989,3 +989,55 @@ export const recordInputMovement = async (
     item: InputItem;
     transaction: InputTxnView;
   };
+
+// ─── Buyers (#83, #84) ──────────────────────────────────────────────────────
+
+export interface Buyer {
+  id: string;
+  name: string;
+  contactName?: string | null;
+  phone?: string | null;
+  preferredSizes: string[];
+  acceptableSizes: string[];
+  requirementNote?: string | null;
+  notes?: string | null;
+  status: string;
+  version: number;
+}
+
+export interface BuyerFields {
+  name: string;
+  contactName: string;
+  phone: string;
+  preferredSizes: string[];
+  acceptableSizes: string[];
+  requirementNote: string;
+  notes: string;
+}
+
+export const listBuyers = async (tenantId: string, includeArchived = false) => [
+  ...(unwrap(await q('listBuyers')({ tenantId, includeArchived })) as Buyer[]),
+];
+
+export const getBuyer = async (tenantId: string, buyerId: string) =>
+  unwrap(await q('getBuyer')({ tenantId, buyerId })) as Buyer;
+
+export const createBuyer = async (
+  tenantId: string,
+  buyerId: string,
+  f: BuyerFields
+) => unwrap(await mu('createBuyer')({ tenantId, buyerId, ...f })) as Buyer;
+
+export const updateBuyer = async (
+  tenantId: string,
+  buyer: Buyer,
+  changes: Partial<BuyerFields> & { status?: string }
+) =>
+  unwrap(
+    await mu('updateBuyer')({
+      tenantId,
+      buyerId: buyer.id,
+      expectedVersion: buyer.version,
+      ...changes,
+    })
+  ) as Buyer;

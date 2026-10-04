@@ -1,0 +1,50 @@
+{
+  "buyers": {
+    "title": "Buyers",
+    "add": "Add buyer",
+    "empty": "No buyers yet. Add the restaurants, shops and people who buy from you.",
+    "showArchived": "Show archived buyers",
+    "archived": "Archived",
+    "prefers": "Prefers {{sizes}}",
+    "noPreference": "No size preference",
+    "back": "Buyers"
+  },
+  "buyer": {
+    "preferred": "Preferred sizes",
+    "acceptable": "Also accepts",
+    "none": "None",
+    "requirement": "What they need",
+    "contact": "Contact",
+    "notes": "Notes",
+    "matchingTrees": "Trees likely to give {{size}}",
+    "matchingHelp": "Based on each tree's dehusked samples. It suggests where to pick; it doesn't promise sizes.",
+    "edit": "Edit",
+    "archive": "Archive buyer",
+    "restore": "Restore buyer",
+    "notFound": "This buyer wasn't found.",
+    "treesTitle": "Trees for this buyer"
+  },
+  "buyerDialog": {
+    "addTitle": "Add buyer",
+    "editTitle": "Edit {{name}}",
+    "name": "Name",
+    "contactName": "Contact person (optional)",
+    "phone": "Phone (optional)",
+    "sizes": "Coconut sizes",
+    "sizesHelp": "Tap a size to cycle: preferred → also accepts → no.",
+    "size": "{{size}}: {{choice}}",
+    "choice": {
+      "PREFERRED": "Preferred",
+      "ACCEPTABLE": "Also accepts",
+      "NO": "No"
+    },
+    "requirementNote": "What they need (optional)",
+    "requirementHelp": "For example: \"40 medium every Friday\".",
+    "notes": "Notes (optional)",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "needName": "Enter a name.",
+    "failed": "Couldn't save. Please try again."
+  }
+}

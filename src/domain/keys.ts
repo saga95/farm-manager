@@ -150,6 +150,32 @@ export const keys: KeyBuilders = {
     SK: `S${SEP}${assertId('harvestDate', harvestDate)}${SEP}${assertId('harvestId', harvestId)}`,
   }),
 
+  /** Buyer (§13.1): tenant-level, shared by all farms of the tenant. */
+  buyer: (tenantId: string, buyerId: string): Key => ({
+    PK: t(tenantId),
+    SK: `BUYER${SEP}${assertId('buyerId', buyerId)}`,
+  }),
+  /** Sale within a farm, sorted by date (§13.3). */
+  sale: (
+    tenantId: string,
+    farmId: string,
+    saleDate: string,
+    saleId: string
+  ): Key => ({
+    PK: keys.farmPk(tenantId, farmId),
+    SK: `SALE${SEP}${assertId('saleDate', saleDate)}${SEP}${assertId('saleId', saleId)}`,
+  }),
+  /** GSI1: a buyer's sales by date. */
+  saleByBuyer: (
+    tenantId: string,
+    buyerId: string,
+    saleDate: string,
+    saleId: string
+  ) => ({
+    GSI1PK: `${t(tenantId)}${SEP}BUY${SEP}${assertId('buyerId', buyerId)}`,
+    GSI1SK: `SALE${SEP}${assertId('saleDate', saleDate)}${SEP}${assertId('saleId', saleId)}`,
+  }),
+
   /** Farm-input item (§12) within a farm. */
   inputItem: (tenantId: string, farmId: string, itemId: string): Key => ({
     PK: keys.farmPk(tenantId, farmId),
@@ -201,6 +227,8 @@ export const keys: KeyBuilders = {
     batches: 'BATCH#',
     media: 'MEDIA#',
     inputs: 'INPUT#',
+    buyers: 'BUYER#',
+    sales: 'SALE#',
   },
   tenantPk: t,
 };
@@ -265,6 +293,19 @@ interface KeyBuilders {
     harvestDate: string,
     harvestId: string
   ) => Key;
+  buyer: (tenantId: string, buyerId: string) => Key;
+  sale: (
+    tenantId: string,
+    farmId: string,
+    saleDate: string,
+    saleId: string
+  ) => Key;
+  saleByBuyer: (
+    tenantId: string,
+    buyerId: string,
+    saleDate: string,
+    saleId: string
+  ) => { GSI1PK: string; GSI1SK: string };
   inputItem: (tenantId: string, farmId: string, itemId: string) => Key;
   inputTxnPk: (tenantId: string, itemId: string) => string;
   inputTxn: (
@@ -294,7 +335,9 @@ interface KeyBuilders {
       | 'rounds'
       | 'batches'
       | 'media'
-      | 'inputs',
+      | 'inputs'
+      | 'buyers'
+      | 'sales',
       string
     >
   >;

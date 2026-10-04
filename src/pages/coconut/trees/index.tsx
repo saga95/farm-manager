@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import NextLink from 'next/link';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +37,15 @@ export default function TreesPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>('ALL');
   const [size, setSize] = useState<ClassifiedSize | 'ANY'>('ANY');
+  // Deep link from a buyer: /coconut/trees?size=MEDIUM (#84)
+  const sizeParam = router.query['size'];
+  useEffect(() => {
+    if (
+      typeof sizeParam === 'string' &&
+      (CLASSIFIED_SIZES as readonly string[]).includes(sizeParam)
+    )
+      setSize(sizeParam as ClassifiedSize);
+  }, [sizeParam]);
   const [adding, setAdding] = useState(false);
   const trees = useTrees(showInactive);
   const zones = useZones();
