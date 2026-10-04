@@ -4,7 +4,6 @@
  */
 
 import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '../../amplify/data/resource';
 
 export type ApiErrorCode =
   | 'UNAUTHENTICATED'
@@ -45,8 +44,34 @@ export function toApiError(message: string | undefined): ApiError {
   return new ApiError('INTERNAL', message ?? 'Unexpected error');
 }
 
-let client: ReturnType<typeof generateClient<Schema>> | undefined;
-const api = () => (client ??= generateClient<Schema>({ authMode: 'userPool' }));
+type AnyOp = (vars?: Record<string, unknown>) => Promise<Result<unknown>>;
+
+/**
+ * Untyped Amplify data client. Every response is typed by the interfaces in
+ * this file instead: inferring the full `ClientSchema` became "excessively
+ * deep" for the compiler once the schema grew, and it slowed every type-check.
+ * The operation registry test keeps schema and server in step.
+ */
+interface DataClient {
+  queries: Record<string, AnyOp>;
+  mutations: Record<string, AnyOp>;
+}
+let client: DataClient | undefined;
+const api = (): DataClient =>
+  (client ??= generateClient({
+    authMode: 'userPool',
+  }) as unknown as DataClient);
+
+const q = (name: string): AnyOp => {
+  const op = api().queries[name];
+  if (!op) throw new ApiError('INTERNAL', `Unknown query ${name}`);
+  return op;
+};
+const mu = (name: string): AnyOp => {
+  const op = api().mutations[name];
+  if (!op) throw new ApiError('INTERNAL', `Unknown mutation ${name}`);
+  return op;
+};
 
 type Result<T> = {
   data?: T | null;
@@ -76,7 +101,7 @@ export interface Me {
 }
 
 export async function fetchMe(): Promise<Me> {
-  const data = unwrap((await api().queries.me()) as Result<Me>);
+  const data = unwrap(await q('me')()) as Me;
   return { ...data, memberships: [...data.memberships] };
 }
 
@@ -96,13 +121,11 @@ export interface CreateTenantVariables {
 export async function createTenant(
   variables: CreateTenantVariables
 ): Promise<{ tenantId: string; farmId: string; replayed: boolean }> {
-  return unwrap(
-    (await api().mutations.createTenant(variables)) as Result<{
-      tenantId: string;
-      farmId: string;
-      replayed: boolean;
-    }>
-  );
+  return unwrap(await mu('createTenant')({ ...variables })) as {
+    tenantId: string;
+    farmId: string;
+    replayed: boolean;
+  };
 }
 
 // ─── Farms, zones, growing spaces (#33–#36) ──────────────────────────────────
@@ -157,11 +180,6 @@ export interface GrowingSpace {
 }
 
 /* The generated client is typed from the schema; results are narrowed to our view types. */
-type AnyOp = (vars: Record<string, unknown>) => Promise<Result<unknown>>;
-const q = (name: string): AnyOp =>
-  (api().queries as unknown as Record<string, AnyOp>)[name] as AnyOp;
-const mu = (name: string): AnyOp =>
-  (api().mutations as unknown as Record<string, AnyOp>)[name] as AnyOp;
 
 export const listFarms = async (tenantId: string) => [
   ...(unwrap(await q('listFarms')({ tenantId })) as Farm[]),
@@ -540,6 +558,8 @@ export const listDueTrees = async (
   ) as DueTree[]),
 ];
 
+export type ProduceState = 'HUSKED' | 'DEHUSKED';
+
 export interface ProduceBatch {
   id: string;
   cropCode: string;
@@ -549,18 +569,125 @@ export interface ProduceBatch {
   quantityReceived: number;
   unit: string;
   available: number;
+  /** Parsed from AWSJSON; always has both states */
+  availableByState: Record<ProduceState, number>;
   status: string;
+  version: number;
+}
+
+export interface ProduceTxn {
+  id: string;
+  batchId: string;
+  transactionType: string;
+  quantity: number;
+  unit: string;
+  state?: string | null;
+  fromState?: string | null;
+  toState?: string | null;
+  transactionDate: string;
+  sourceId?: string | null;
+  reason?: string | null;
+  notes?: string | null;
+  createdAt?: string | null;
+  createdBy?: string | null;
+}
+
+type RawBatch = Omit<ProduceBatch, 'availableByState'> & {
+  availableByState?: string | Partial<Record<ProduceState, number>> | null;
+};
+
+/** AWSJSON arrives as a string; normalise to numbers for both states. */
+function toBatch(raw: RawBatch): ProduceBatch {
+  const parsed =
+    typeof raw.availableByState === 'string'
+      ? (JSON.parse(raw.availableByState) as Partial<
+          Record<ProduceState, number>
+        >)
+      : (raw.availableByState ?? {});
+  return {
+    ...raw,
+    availableByState: {
+      HUSKED: parsed.HUSKED ?? (raw.availableByState ? 0 : raw.available),
+      DEHUSKED: parsed.DEHUSKED ?? 0,
+    },
+  };
 }
 
 export const listProduceBatches = async (
   tenantId: string,
   farmId: string,
   availableOnly = true
-) => [
-  ...(unwrap(
-    await q('listProduceBatches')({ tenantId, farmId, availableOnly })
-  ) as ProduceBatch[]),
-];
+) =>
+  (
+    unwrap(
+      await q('listProduceBatches')({ tenantId, farmId, availableOnly })
+    ) as RawBatch[]
+  ).map(toBatch);
+
+export interface ProduceBatchDetail {
+  batch: ProduceBatch;
+  transactions: ProduceTxn[];
+  nextToken: string | null;
+}
+
+export const getProduceBatch = async (
+  tenantId: string,
+  batchId: string,
+  nextToken?: string | null
+): Promise<ProduceBatchDetail> => {
+  const d = unwrap(
+    await q('getProduceBatch')({
+      tenantId,
+      batchId,
+      nextToken: nextToken ?? null,
+    })
+  ) as {
+    batch: RawBatch;
+    transactions: ProduceTxn[];
+    nextToken?: string | null;
+  };
+  return {
+    batch: toBatch(d.batch),
+    transactions: [...d.transactions],
+    nextToken: d.nextToken ?? null,
+  };
+};
+
+export interface ProduceMovementResult {
+  batch: ProduceBatch;
+  transaction: ProduceTxn;
+}
+
+const toMovement = (raw: unknown): ProduceMovementResult => {
+  const r = raw as { batch: RawBatch; transaction: ProduceTxn };
+  return { batch: toBatch(r.batch), transaction: r.transaction };
+};
+
+export const recordProduceMovement = async (
+  tenantId: string,
+  input: {
+    batchId: string;
+    operationId: string;
+    transactionType: string;
+    quantity: number;
+    state: ProduceState;
+    transactionDate: string;
+    notes?: string | null;
+  }
+) =>
+  toMovement(unwrap(await mu('recordProduceMovement')({ tenantId, ...input })));
+
+export const dehuskProduce = async (
+  tenantId: string,
+  input: {
+    batchId: string;
+    operationId: string;
+    quantity: number;
+    transactionDate: string;
+    notes?: string | null;
+  }
+) => toMovement(unwrap(await mu('dehuskProduce')({ tenantId, ...input })));
+
 // ─── Dehusked samples (#62–#67) ──────────────────────────────────────────────
 
 export type SizeClass = 'SMALL' | 'MEDIUM' | 'LARGE' | 'UNCLASSIFIED';
