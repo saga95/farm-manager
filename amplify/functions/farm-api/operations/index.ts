@@ -18,6 +18,13 @@ import {
   updateZone,
 } from './farm';
 import { me } from './me';
+import {
+  createPluckingRound,
+  getPluckingRound,
+  listPluckingRounds,
+  recordTreeHarvest,
+  updateRoundPlan,
+} from './plucking';
 
 /** Every AppSync field handled by farm-api. Field name → operation. */
 export const OPERATIONS: Readonly<Record<string, Operation>> =
@@ -38,5 +45,10 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       createTree,
       bulkCreateTrees,
       updateTree,
+      createPluckingRound,
+      listPluckingRounds,
+      getPluckingRound,
+      updateRoundPlan,
+      recordTreeHarvest,
     ].map(op => [op.name, op])
   );
