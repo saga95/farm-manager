@@ -270,6 +270,9 @@ export interface Tree {
   locationNote?: string | null;
   notes?: string | null;
   coverPhotoId?: string | null;
+  latestSampleSize?: string | null;
+  sizeTendency?: string | null;
+  sampleCount?: number | null;
   version: number;
   createdAt?: string | null;
 }
@@ -380,6 +383,7 @@ export interface TreeHarvest {
 export interface PluckingRoundDetail {
   round: PluckingRound;
   harvests: TreeHarvest[];
+  samples?: CoconutSample[];
 }
 
 export const listPluckingRounds = async (tenantId: string, farmId: string) => [
@@ -392,7 +396,11 @@ export const getPluckingRound = async (tenantId: string, roundId: string) => {
   const d = unwrap(
     await q('getPluckingRound')({ tenantId, roundId })
   ) as PluckingRoundDetail;
-  return { round: d.round, harvests: [...d.harvests] };
+  return {
+    round: d.round,
+    harvests: [...d.harvests],
+    samples: [...(d.samples ?? [])],
+  } satisfies PluckingRoundDetail;
 };
 
 export const createPluckingRound = async (
@@ -485,6 +493,8 @@ export interface TreeHistory {
   harvests: TreeHarvest[];
   summary: TreeYieldSummary;
   prediction: PredictionView;
+  samples: CoconutSample[];
+  sizeHistory: SizeHistoryView;
 }
 
 export interface DueTree {
@@ -538,3 +548,44 @@ export const listProduceBatches = async (
     await q('listProduceBatches')({ tenantId, farmId, availableOnly })
   ) as ProduceBatch[]),
 ];
+// ─── Dehusked samples (#62–#67) ──────────────────────────────────────────────
+
+export type SizeClass = 'SMALL' | 'MEDIUM' | 'LARGE' | 'UNCLASSIFIED';
+
+export interface CoconutSample {
+  id: string;
+  harvestId: string;
+  roundId?: string | null;
+  treeId: string;
+  treeCode: string;
+  sampledAt: string;
+  sizeClass: SizeClass | string;
+  weight?: number | null;
+  weightUnit?: string | null;
+  notes?: string | null;
+  version: number;
+}
+
+export interface SizeHistoryView {
+  latest?: string | null;
+  latestDate?: string | null;
+  sampleCount: number;
+  counts: Record<SizeClass, number>;
+  recent: string[];
+  tendency?: string | null;
+  tendencyMatches: number;
+}
+
+export const recordCoconutSample = async (
+  tenantId: string,
+  input: {
+    harvestId: string;
+    sampleId: string;
+    sizeClass: string;
+    weight?: number | null;
+    notes?: string | null;
+  }
+) =>
+  unwrap(
+    await mu('recordCoconutSample')({ tenantId, ...input })
+  ) as CoconutSample;

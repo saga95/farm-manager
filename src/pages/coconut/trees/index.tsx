@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import NextLink from 'next/link';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
+import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -16,6 +17,7 @@ import ParkOutlined from '@mui/icons-material/ParkOutlined';
 import PlaylistAddOutlined from '@mui/icons-material/PlaylistAddOutlined';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import { AppPage } from '@/components/AppPage';
+import { tokens } from '@/design-system';
 import { EmptyState } from '@/components/ui/EmptyState/EmptyState';
 import { TreeDialog } from '@/features/coconut/components/TreeDialog';
 import { useTrees } from '@/features/coconut/hooks';
@@ -23,15 +25,18 @@ import { countByStatus, filterTrees } from '@/features/coconut/treeFilters';
 import { EntityList } from '@/features/farm/components/EntityList';
 import { useZones } from '@/features/farm/hooks';
 import { useTenant } from '@/features/tenant';
+import { CLASSIFIED_SIZES, type ClassifiedSize } from '@/domain/samples';
 
 /** SCR-005 Coconut tree list (FR-CN-009). */
 export default function TreesPage() {
   const { t } = useTranslation('coconut');
+  const { t: ts } = useTranslation('samples');
   const router = useRouter();
   const { can } = useTenant();
   const [showInactive, setShowInactive] = useState(false);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>('ALL');
+  const [size, setSize] = useState<ClassifiedSize | 'ANY'>('ANY');
   const [adding, setAdding] = useState(false);
   const trees = useTrees(showInactive);
   const zones = useZones();
@@ -40,8 +45,8 @@ export default function TreesPage() {
   const all = useMemo(() => trees.data ?? [], [trees.data]);
   const counts = useMemo(() => countByStatus(all), [all]);
   const visible = useMemo(
-    () => filterTrees(all, search, status),
-    [all, search, status]
+    () => filterTrees(all, search, status, size),
+    [all, search, status, size]
   );
   const zoneName = useMemo(
     () => new Map((zones.data ?? []).map(z => [z.id, z.name])),
@@ -114,6 +119,20 @@ export default function TreesPage() {
             />
           ))}
         </Stack>
+        <TextField
+          select
+          label={ts('filter.label')}
+          value={size}
+          onChange={e => setSize(e.target.value as ClassifiedSize | 'ANY')}
+          sx={{ maxWidth: { sm: tokens.sizes.cardNarrow } }}
+        >
+          <MenuItem value='ANY'>{ts('filter.any')}</MenuItem>
+          {CLASSIFIED_SIZES.map(c => (
+            <MenuItem key={c} value={c}>
+              {ts(`sizes.${c}`)}
+            </MenuItem>
+          ))}
+        </TextField>
         <FormControlLabel
           control={
             <Switch
@@ -146,7 +165,17 @@ export default function TreesPage() {
               primary: tree.displayLabel
                 ? `${tree.code} · ${tree.displayLabel}`
                 : tree.code,
-              secondary: tree.zoneId ? zoneName.get(tree.zoneId) : undefined,
+              secondary:
+                [
+                  tree.zoneId ? zoneName.get(tree.zoneId) : null,
+                  tree.latestSampleSize
+                    ? ts('history.latest', {
+                        size: ts(`sizes.${tree.latestSampleSize}`),
+                      })
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || undefined,
               badge: t(`status.${tree.status}`),
             }))}
             onSelect={id => void router.push(`/coconut/trees/${id}`)}

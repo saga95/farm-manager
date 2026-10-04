@@ -47,3 +47,38 @@ describe('filterTrees (FR-CN-009)', () => {
     expect(countByStatus(trees)).toEqual({ PRODUCING: 2, YOUNG: 1 });
   });
 });
+
+describe('size filter (§9.4 buyer matching)', () => {
+  const mk = (
+    code: string,
+    latestSampleSize: string | null,
+    sizeTendency: string | null
+  ): Tree => ({
+    id: code,
+    tenantId: 't',
+    farmId: 'f',
+    code,
+    cropCode: 'COCONUT',
+    status: 'PRODUCING',
+    version: 1,
+    latestSampleSize,
+    sizeTendency,
+  });
+  const trees = [
+    mk('C-001', 'LARGE', null),
+    mk('C-002', 'MEDIUM', 'LARGE'),
+    mk('C-003', 'SMALL', 'SMALL'),
+    mk('C-004', null, null),
+  ];
+
+  it('matches on latest sample OR recent tendency; never on unsampled trees', () => {
+    expect(filterTrees(trees, '', 'ALL', 'LARGE').map(t => t.code)).toEqual([
+      'C-001',
+      'C-002',
+    ]);
+    expect(filterTrees(trees, '', 'ALL', 'SMALL').map(t => t.code)).toEqual([
+      'C-003',
+    ]);
+    expect(filterTrees(trees, '', 'ALL', 'ANY')).toHaveLength(4);
+  });
+});
