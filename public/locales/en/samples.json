@@ -1,0 +1,43 @@
+{
+  "sizes": {
+    "SMALL": "Small",
+    "MEDIUM": "Medium",
+    "LARGE": "Large",
+    "UNCLASSIFIED": "Not classified"
+  },
+  "round": {
+    "title": "Dehusked samples",
+    "intro": "Dehusk one coconut from each harvested tree and record its size.",
+    "notSampled": "Not sampled",
+    "progress": "{{done}} of {{total}} trees sampled",
+    "start": "Record samples",
+    "continue": "Next: {{code}}"
+  },
+  "dialog": {
+    "title": "Sample from {{code}}",
+    "question": "Size of the dehusked coconut",
+    "weight": "Weight in grams (optional)",
+    "notes": "Notes (optional)",
+    "saveNext": "Save & next tree",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Close",
+    "pickSize": "Choose a size.",
+    "failed": "Couldn't save the sample. Please try again."
+  },
+  "history": {
+    "title": "Size from samples",
+    "latest": "Latest sample: {{size}}",
+    "latestOn": "Latest sample ({{date}}): {{size}}",
+    "never": "Not sampled yet.",
+    "tendency": "{{matches}} of the last {{total}} samples were {{size}}.",
+    "noTendency": "Not enough samples to show a usual size yet.",
+    "evidence": "Based on one dehusked coconut per harvest. It shows the likely size, not the size of every coconut.",
+    "counts": "All samples",
+    "recent": "Most recent first"
+  },
+  "filter": {
+    "label": "Likely size (from samples)",
+    "any": "Any size"
+  }
+}

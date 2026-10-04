@@ -33,6 +33,7 @@ import { useTrees } from '@/features/coconut/hooks';
 import { CaptureDialog } from '@/features/plucking/components/CaptureDialog';
 import { TreePicker } from '@/features/plucking/components/TreePicker';
 import { useRound, useRoundActions } from '@/features/plucking/hooks';
+import { RoundSamplesCard } from '@/features/samples/components/RoundSamplesCard';
 import { useTenant } from '@/features/tenant';
 import { ApiError } from '@/lib/api';
 
@@ -308,6 +309,16 @@ export default function RoundPage() {
             >
               {t('capture.addTree')}
             </Button>
+          )}
+
+          {roundId && harvests.length > 0 && (
+            <RoundSamplesCard
+              roundId={roundId}
+              harvests={harvests}
+              samples={detail.data?.samples ?? []}
+              order={round.plannedTreeIds}
+              canRecord={can('sample.record')}
+            />
           )}
 
           {!open && harvests.length === 0 && (

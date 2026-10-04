@@ -23,6 +23,7 @@ import { TreeDialog } from '@/features/coconut/components/TreeDialog';
 import { TreeStatusChip } from '@/features/coconut/components/TreeStatusChip';
 import { useTree, useTreeHistory } from '@/features/coconut/hooks';
 import { PredictionCard } from '@/features/prediction/components/PredictionCard';
+import { SizeHistoryCard } from '@/features/samples/components/SizeHistoryCard';
 import { StatTile } from '@/components/ui/StatTile/StatTile';
 import { useZones } from '@/features/farm/hooks';
 import { useTenant } from '@/features/tenant';
@@ -202,6 +203,7 @@ export default function TreeProfilePage() {
                 />
               </Box>
               <PredictionCard prediction={history.data.prediction} />
+              <SizeHistoryCard history={history.data.sizeHistory} />
             </>
           )}
 
