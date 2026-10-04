@@ -47,6 +47,17 @@ export const keys: KeyBuilders = {
     SK: `PROFILE${SEP}${assertId('profileId', profileId)}`,
   }),
 
+  /** Pending invite to join a tenant, keyed by the invitee's email (#37). */
+  invite: (tenantId: string, email: string): Key => ({
+    PK: t(tenantId),
+    SK: `INVITE${SEP}${assertId('email', email)}`,
+  }),
+  /** GSI1: invites waiting for an email address (looked up with the caller's verified email). */
+  inviteByEmail: (email: string, tenantId: string) => ({
+    GSI1PK: `EMAIL${SEP}${assertId('email', email)}`,
+    GSI1SK: t(tenantId),
+  }),
+
   farm: (tenantId: string, farmId: string): Key => ({
     PK: t(tenantId),
     SK: `FARM${SEP}${assertId('farmId', farmId)}`,
@@ -249,6 +260,7 @@ export const keys: KeyBuilders = {
   prefix: {
     members: 'MEMBER#',
     roles: 'ROLE#',
+    invites: 'INVITE#',
     profiles: 'PROFILE#',
     farms: 'FARM#',
     zones: 'ZONE#',
@@ -275,6 +287,11 @@ interface KeyBuilders {
   userPk: (userId: string) => string;
   role: (tenantId: string, roleId: string) => Key;
   profile: (tenantId: string, profileId: string) => Key;
+  invite: (tenantId: string, email: string) => Key;
+  inviteByEmail: (
+    email: string,
+    tenantId: string
+  ) => { GSI1PK: string; GSI1SK: string };
   farm: (tenantId: string, farmId: string) => Key;
   farmPk: (tenantId: string, farmId: string) => string;
   zone: (tenantId: string, farmId: string, zoneId: string) => Key;
@@ -374,6 +391,7 @@ interface KeyBuilders {
     Record<
       | 'members'
       | 'roles'
+      | 'invites'
       | 'profiles'
       | 'farms'
       | 'zones'

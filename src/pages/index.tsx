@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { AppPage } from '@/components/AppPage';
+import { PendingInvites } from '@/features/team/components/JoinInvites';
 import { FarmDashboard } from '@/features/analytics/components/FarmDashboard';
 import { useDueTrees, useTrees } from '@/features/coconut/hooks';
 import { useCurrentFarm } from '@/features/farm/hooks';
@@ -61,6 +62,7 @@ export default function HomePage() {
       farmName={farmName}
       showQuickActions={false}
     >
+      <PendingInvites />
       <LiveDashboard farmName={farmName} />
     </AppPage>
   );

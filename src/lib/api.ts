@@ -1337,3 +1337,134 @@ export const recordCycleHarvest = async (
   unwrap(
     await mu('recordCycleHarvest')({ tenantId, ...input })
   ) as CycleHarvest;
+
+// ─── Team access (#121, #37) ────────────────────────────────────────────────
+
+export interface TeamMember {
+  userId: string;
+  email?: string | null;
+  profileId: string;
+  profileName?: string | null;
+  status: string;
+  isMe: boolean;
+  version: number;
+  joinedAt?: string | null;
+}
+
+export interface TeamInvite {
+  email: string;
+  profileId: string;
+  profileName?: string | null;
+  expiresAt: string;
+  invitedBy?: string | null;
+}
+
+export interface TeamRole {
+  id: string;
+  name: string;
+  entitlements: string[];
+  isSystem: boolean;
+  status: string;
+  version: number;
+}
+
+export interface TeamProfile {
+  id: string;
+  name: string;
+  roleIds: string[];
+  isSystem: boolean;
+  status: string;
+  version: number;
+}
+
+export interface Team {
+  members: TeamMember[];
+  invites: TeamInvite[];
+  roles: TeamRole[];
+  profiles: TeamProfile[];
+  catalogue: string[];
+  myEntitlements: string[];
+}
+
+export interface MyInvite {
+  tenantId: string;
+  tenantName: string;
+  invitedBy?: string | null;
+  expiresAt: string;
+}
+
+export const getTeam = async (tenantId: string) => {
+  const d = unwrap(await q('getTeam')({ tenantId })) as Team;
+  return {
+    members: [...d.members],
+    invites: [...d.invites],
+    roles: [...d.roles],
+    profiles: [...d.profiles],
+    catalogue: [...d.catalogue],
+    myEntitlements: [...d.myEntitlements],
+  } satisfies Team;
+};
+
+export const myInvites = async () => [
+  ...(unwrap(await q('myInvites')({})) as MyInvite[]),
+];
+
+export const inviteMember = async (
+  tenantId: string,
+  email: string,
+  profileId: string
+) =>
+  unwrap(
+    await mu('inviteMember')({ tenantId, email, profileId })
+  ) as TeamInvite;
+
+export const revokeInvite = async (tenantId: string, email: string) =>
+  unwrap(await mu('revokeInvite')({ tenantId, email })) as boolean;
+
+export const acceptInvite = async (tenantId: string) =>
+  unwrap(await mu('acceptInvite')({ tenantId })) as {
+    tenantId: string;
+    joined: boolean;
+  };
+
+export const updateMember = async (
+  tenantId: string,
+  member: TeamMember,
+  changes: { profileId?: string; status?: string }
+) =>
+  unwrap(
+    await mu('updateMember')({
+      tenantId,
+      userId: member.userId,
+      expectedVersion: member.version,
+      ...changes,
+    })
+  ) as { userId: string; profileId: string; status: string; version: number };
+
+export const saveRole = async (
+  tenantId: string,
+  role: { id: string; version: number },
+  values: { name: string; entitlements: string[]; status?: string }
+) =>
+  unwrap(
+    await mu('saveRole')({
+      tenantId,
+      roleId: role.id,
+      expectedVersion: role.version,
+      ...values,
+    })
+  ) as TeamRole;
+
+export const saveProfile = async (
+  tenantId: string,
+  profile: { id: string; version: number },
+  values: { name: string; roleIds: string[]; status?: string }
+) =>
+  unwrap(
+    await mu('saveProfile')({
+      tenantId,
+      profileId: profile.id,
+      expectedVersion: profile.version,
+      ...values,
+    })
+  ) as TeamProfile;

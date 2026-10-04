@@ -17,6 +17,7 @@ import enSales from '../../public/locales/en/sales.json';
 import enSamples from '../../public/locales/en/samples.json';
 import enSetup from '../../public/locales/en/setup.json';
 import enShell from '../../public/locales/en/shell.json';
+import enTeam from '../../public/locales/en/team.json';
 
 /**
  * English is bundled into the build so the server-rendered HTML and the first
@@ -39,6 +40,7 @@ export const NAMESPACES = [
   'inventory',
   'sales',
   'growing',
+  'team',
 ] as const;
 
 const resources = {
@@ -58,6 +60,7 @@ const resources = {
     inventory: enInventory,
     sales: enSales,
     growing: enGrowing,
+    team: enTeam,
   },
 };
 

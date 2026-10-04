@@ -7,4 +7,5 @@ export * from './types';
 export * from './defaults';
 export * from './resolve';
 export * from './guards';
+export * from './invites';
 export { buildTenantRbac, seedDefaultRbac } from './seed';

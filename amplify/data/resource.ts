@@ -1368,11 +1368,168 @@ const growing = a.schema({
     .handler(a.handler.function(farmApi)),
 });
 
+/**
+ * Access bounded context: members, invites, roles and profiles (#121, #37).
+ * Refs stay inside this schema (ADR-0005).
+ */
+const access = a.schema({
+  TeamMember: a.customType({
+    userId: a.string().required(),
+    email: a.string(),
+    profileId: a.string().required(),
+    profileName: a.string(),
+    status: a.string().required(),
+    isMe: a.boolean().required(),
+    version: a.integer().required(),
+    joinedAt: a.string(),
+  }),
+
+  TeamInvite: a.customType({
+    email: a.string().required(),
+    profileId: a.string().required(),
+    profileName: a.string(),
+    expiresAt: a.string().required(),
+    invitedBy: a.string(),
+  }),
+
+  TeamRole: a.customType({
+    id: a.string().required(),
+    name: a.string().required(),
+    entitlements: a.string().required().array().required(),
+    isSystem: a.boolean().required(),
+    status: a.string().required(),
+    version: a.integer().required(),
+  }),
+
+  TeamProfile: a.customType({
+    id: a.string().required(),
+    name: a.string().required(),
+    roleIds: a.string().required().array().required(),
+    isSystem: a.boolean().required(),
+    status: a.string().required(),
+    version: a.integer().required(),
+  }),
+
+  Team: a.customType({
+    members: a.ref('TeamMember').required().array().required(),
+    invites: a.ref('TeamInvite').required().array().required(),
+    roles: a.ref('TeamRole').required().array().required(),
+    profiles: a.ref('TeamProfile').required().array().required(),
+    catalogue: a.string().required().array().required(),
+    myEntitlements: a.string().required().array().required(),
+  }),
+
+  InviteResult: a.customType({
+    email: a.string().required(),
+    profileId: a.string().required(),
+    profileName: a.string(),
+    expiresAt: a.string().required(),
+  }),
+
+  MyInvite: a.customType({
+    tenantId: a.string().required(),
+    tenantName: a.string().required(),
+    invitedBy: a.string(),
+    expiresAt: a.string().required(),
+  }),
+
+  JoinResult: a.customType({
+    tenantId: a.string().required(),
+    joined: a.boolean().required(),
+  }),
+
+  MemberUpdate: a.customType({
+    userId: a.string().required(),
+    profileId: a.string().required(),
+    status: a.string().required(),
+    version: a.integer().required(),
+  }),
+
+  getTeam: a
+    .query()
+    .arguments({ tenantId: a.id().required() })
+    .returns(a.ref('Team').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  myInvites: a
+    .query()
+    .returns(a.ref('MyInvite').required().array().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  inviteMember: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      email: a.string().required(),
+      profileId: a.string().required(),
+    })
+    .returns(a.ref('InviteResult').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  revokeInvite: a
+    .mutation()
+    .arguments({ tenantId: a.id().required(), email: a.string().required() })
+    .returns(a.boolean().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  acceptInvite: a
+    .mutation()
+    .arguments({ tenantId: a.id().required() })
+    .returns(a.ref('JoinResult').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  updateMember: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      userId: a.string().required(),
+      expectedVersion: a.integer().required(),
+      profileId: a.string(),
+      status: a.string(),
+    })
+    .returns(a.ref('MemberUpdate').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  saveRole: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      roleId: a.string().required(),
+      expectedVersion: a.integer().required(),
+      name: a.string().required(),
+      entitlements: a.string().required().array().required(),
+      status: a.string(),
+    })
+    .returns(a.ref('TeamRole').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  saveProfile: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      profileId: a.string().required(),
+      expectedVersion: a.integer().required(),
+      name: a.string().required(),
+      roleIds: a.string().required().array().required(),
+      status: a.string(),
+    })
+    .returns(a.ref('TeamProfile').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+});
+
 /** Client typing for the core schema (the web client uses untyped calls). */
 export type Schema = ClientSchema<typeof schema>;
 
 export const data = defineData({
-  schema: a.combine([schema, stock, sales, growing]),
+  schema: a.combine([schema, stock, sales, growing, access]),
   authorizationModes: {
     defaultAuthorizationMode: 'userPool',
   },
