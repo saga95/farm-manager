@@ -76,3 +76,14 @@ test.describe('Coconut screens', () => {
     });
   }
 });
+
+test.describe('Plucking screens', () => {
+  for (const path of ['/coconut/rounds', '/coconut/rounds/new']) {
+    test(`${path} requires sign-in`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page).toHaveURL(
+        new RegExp(`/auth/login\\?redirect=${encodeURIComponent(path)}$`)
+      );
+    });
+  }
+});

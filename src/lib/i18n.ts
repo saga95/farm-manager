@@ -9,6 +9,7 @@ import enDashboard from '../../public/locales/en/dashboard.json';
 import enFarm from '../../public/locales/en/farm.json';
 import enForms from '../../public/locales/en/forms.json';
 import enNavigation from '../../public/locales/en/navigation.json';
+import enPlucking from '../../public/locales/en/plucking.json';
 import enSetup from '../../public/locales/en/setup.json';
 import enShell from '../../public/locales/en/shell.json';
 
@@ -27,6 +28,7 @@ export const NAMESPACES = [
   'setup',
   'farm',
   'coconut',
+  'plucking',
 ] as const;
 
 const resources = {
@@ -40,6 +42,7 @@ const resources = {
     setup: enSetup,
     farm: enFarm,
     coconut: enCoconut,
+    plucking: enPlucking,
   },
 };
 
