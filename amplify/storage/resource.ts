@@ -1,32 +1,14 @@
 import { defineStorage } from '@aws-amplify/backend';
 
 /**
- * S3 Storage configuration.
- * Pattern from friday.lk and uwu-sri-lanka/website.
+ * Private media bucket (ADR-0003).
  *
- * Paths:
- * - uploads/*  — Admin-managed assets (product images, banners)
- * - assets/*   — Public static assets readable by everyone
- * - user/{entity_id}/* — Per-user private files (avatars, documents)
- *
- * @see https://docs.amplify.aws/gen2/build-a-backend/storage/
+ * No public, guest or identity paths: clients never get bucket credentials.
+ * Every object lives under `tenants/{tenantId}/…` and is reached only through
+ * presigned URLs issued by farm-api after its tenant + entitlement checks.
+ * farm-api's IAM access is granted in amplify/backend.ts (inside the data
+ * stack, which avoids a storage ↔ data dependency cycle).
  */
 export const storage = defineStorage({
   name: 'appStorage',
-  access: allow => ({
-    'uploads/*': [
-      allow.guest.to(['read']),
-      allow.authenticated.to(['read']),
-      allow.groups(['Admin']).to(['read', 'write', 'delete']),
-    ],
-    'assets/*': [
-      allow.guest.to(['read']),
-      allow.authenticated.to(['read']),
-      allow.groups(['Admin']).to(['read', 'write', 'delete']),
-    ],
-    'user/{entity_id}/*': [
-      allow.entity('identity').to(['read', 'write', 'delete']),
-      allow.groups(['Admin']).to(['read']),
-    ],
-  }),
 });

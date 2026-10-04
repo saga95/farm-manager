@@ -226,6 +226,31 @@ const schema = a.schema({
     updatedAt: a.string(),
   }),
 
+  Media: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    farmId: a.id().required(),
+    entityId: a.id().required(),
+    targetType: a.string().required(),
+    entityLabel: a.string(),
+    category: a.string().required(),
+    contentType: a.string().required(),
+    byteSize: a.integer(),
+    capturedAt: a.string(),
+    caption: a.string(),
+    status: a.string().required(),
+    thumbUrl: a.string(),
+    version: a.integer().required(),
+    createdAt: a.string(),
+    createdBy: a.string(),
+  }),
+
+  MediaUpload: a.customType({
+    media: a.ref('Media').required(),
+    /** JSON { original: {url, fields}, thumb: {url, fields} }; null when already uploaded */
+    upload: a.json(),
+  }),
+
   SizeCounts: a.customType({
     SMALL: a.integer().required(),
     MEDIUM: a.integer().required(),
@@ -617,6 +642,60 @@ const schema = a.schema({
       notes: a.string(),
     })
     .returns(a.ref('CoconutSample').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  // ─── Media (#46–#48, ADR-0003) ────────────────────────────────────────────
+  initiateMediaUpload: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      mediaId: a.id().required(),
+      entityId: a.id().required(),
+      category: a.string(),
+      contentType: a.string().required(),
+      byteSize: a.integer().required(),
+      capturedAt: a.string(),
+      caption: a.string(),
+    })
+    .returns(a.ref('MediaUpload').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  completeMediaUpload: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      entityId: a.id().required(),
+      mediaId: a.id().required(),
+    })
+    .returns(a.ref('Media').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  listMedia: a
+    .query()
+    .arguments({ tenantId: a.id().required(), entityId: a.id().required() })
+    .returns(a.ref('Media').required().array().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  getMediaOriginalUrl: a
+    .query()
+    .arguments({ tenantId: a.id().required(), mediaId: a.id().required() })
+    .returns(a.string().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  archiveMedia: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      entityId: a.id().required(),
+      mediaId: a.id().required(),
+      expectedVersion: a.integer().required(),
+    })
+    .returns(a.ref('Media').required())
     .authorization(allow => [allow.authenticated()])
     .handler(a.handler.function(farmApi)),
 });

@@ -45,6 +45,27 @@
 
 - ✅ Media follows exactly the same tenant and entitlement checks as data (AC-TN-004).
 - ✅ Per-tenant export or move is `aws s3 sync s3://bucket/tenants/{tenantId}/`, which fits the dedicated-deployment note.
-- ⚠️ Presigned URLs expire, so the client refreshes them via `getMediaUrls` when an image fails to load.
+- ⚠️ Presigned URLs expire, so the client refreshes them via `listMedia` / `getMediaOriginalUrl` when an image fails to load.
 - ⚠️ `sharp` needs a Linux arm64 build in the Lambda bundle. Pin the version and test bundling in CI (see the esbuild lesson, #118).
 - Later: CloudFront with signed cookies, if image traffic justifies it.
+
+## Amendment 1 (2026-10-04): thumbnails are made on the device
+
+**Change to decision 4.** There is no `sharp` Lambda. The client makes the thumbnail:
+- it draws the photo onto a canvas, at most 480 px on the long edge;
+- it encodes the result as WebP;
+- it uploads the WebP next to the original, through a second presigned POST (`image/webp`, max 512 KB).
+
+`completeMediaUpload` checks that **both** objects exist (HeadObject) before it sets `status=READY`.
+
+Why:
+- `sharp` ships a native binary. It must be bundled for Linux arm64, and bundling has already broken an Amplify deploy (#118).
+- Phones already decode the photo to show a preview, so making the thumbnail there costs nothing extra.
+- Re-encoding through a canvas drops all EXIF data, so the thumbnail never carries GPS. The original is kept untouched as evidence.
+- `capturedAt` is read on the device from EXIF `DateTimeOriginal` when present, with the file's last-modified time as the fallback. It is sent with `initiateMediaUpload`.
+
+Other implementation notes:
+- **IAM:** farm-api's IAM statement (`s3:PutObject`/`GetObject` on `tenants/*`, plus `ListBucket` limited to that prefix so a missing object returns 404) is attached in the function's own stack. That keeps the dependency one-way, data → storage.
+- **Storage paths:** the template's `uploads/*`, `assets/*` and `user/{entity_id}/*` storage paths are removed.
+- **Client views:** views never include storage keys, only presigned URLs.
+- **Still to do:** the cleanup job for stale `PENDING` uploads and the lifecycle rules in decision 6.

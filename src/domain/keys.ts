@@ -150,6 +150,14 @@ export const keys: KeyBuilders = {
     SK: `S${SEP}${assertId('harvestDate', harvestDate)}${SEP}${assertId('harvestId', harvestId)}`,
   }),
 
+  /** Photos attached to one entity, oldest first (ULID order) (ADR-0003). */
+  mediaPk: (tenantId: string, entityId: string): string =>
+    `${t(tenantId)}${SEP}M${SEP}${assertId('entityId', entityId)}`,
+  media: (tenantId: string, entityId: string, mediaId: string): Key => ({
+    PK: keys.mediaPk(tenantId, entityId),
+    SK: `MEDIA${SEP}${assertId('mediaId', mediaId)}`,
+  }),
+
   /** GSI2: get any entity by id; results MUST be tenant-checked. */
   byId: (id: string) => ({ GSI2PK: `ID${SEP}${assertId('id', id)}` }),
 
@@ -173,6 +181,7 @@ export const keys: KeyBuilders = {
     trees: 'TREE#',
     rounds: 'ROUND#',
     batches: 'BATCH#',
+    media: 'MEDIA#',
   },
   tenantPk: t,
 };
@@ -237,6 +246,8 @@ interface KeyBuilders {
     harvestDate: string,
     harvestId: string
   ) => Key;
+  mediaPk: (tenantId: string, entityId: string) => string;
+  media: (tenantId: string, entityId: string, mediaId: string) => Key;
   byId: (id: string) => { GSI2PK: string };
   audit: (
     tenantId: string,
@@ -254,7 +265,8 @@ interface KeyBuilders {
       | 'spaces'
       | 'trees'
       | 'rounds'
-      | 'batches',
+      | 'batches'
+      | 'media',
       string
     >
   >;

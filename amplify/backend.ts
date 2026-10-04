@@ -84,6 +84,31 @@ farmTable.addGlobalSecondaryIndex({
 farmTable.grantReadWriteData(backend.farmApi.resources.lambda);
 backend.farmApi.addEnvironment('FARM_TABLE_NAME', farmTable.tableName);
 
+// ─── Media bucket access for farm-api (ADR-0003) ────────────────────────────────
+//
+// Presigned URLs are signed with the function's role, so the role needs the
+// object actions, scoped to the tenant prefix only. The statement is attached in
+// the function's (data) stack, so the reference is data → storage, one way.
+
+const mediaBucket = backend.storage.resources.bucket;
+backend.farmApi.resources.lambda.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ['s3:PutObject', 's3:GetObject'],
+    resources: [`${mediaBucket.bucketArn}/tenants/*`],
+  })
+);
+// HeadObject on a missing key returns 404 (not 403) only with ListBucket.
+backend.farmApi.resources.lambda.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ['s3:ListBucket'],
+    resources: [mediaBucket.bucketArn],
+    conditions: { StringLike: { 's3:prefix': ['tenants/*'] } },
+  })
+);
+backend.farmApi.addEnvironment('MEDIA_BUCKET_NAME', mediaBucket.bucketName);
+
 // ─── Cognito password policy ────────────────────────────────────────────────────
 
 const { cfnUserPool } = backend.auth.resources.cfnResources;
@@ -273,7 +298,7 @@ backend.storage.resources.cfnResources.cfnBucket.corsConfiguration = {
   corsRules: [
     {
       allowedHeaders: ['*'],
-      allowedMethods: ['GET', 'PUT', 'POST', 'DELETE'],
+      allowedMethods: ['GET', 'POST'],
       allowedOrigins: ['*'], // TODO: Restrict to your domain in production
       exposedHeaders: ['ETag', 'x-amz-meta-custom-header'],
       maxAge: 3600,
