@@ -61,6 +61,16 @@ import {
 } from './sales';
 import { recordCoconutSample } from './samples';
 import {
+  acceptInvite,
+  getTeam,
+  inviteMember,
+  myInvites,
+  revokeInvite,
+  saveProfile,
+  saveRole,
+  updateMember,
+} from './team';
+import {
   dehuskProduce,
   getProduceBatch,
   listProduceBatches,
@@ -127,6 +137,14 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       listActivities,
       archiveActivity,
       recordCycleHarvest,
+      getTeam,
+      myInvites,
+      inviteMember,
+      revokeInvite,
+      acceptInvite,
+      updateMember,
+      saveRole,
+      saveProfile,
       getTreeHistory,
       listDueTrees,
       recordCoconutSample,

@@ -129,20 +129,59 @@ export function installFakeDdb() {
     ConditionExpression?: string;
     ExpressionAttributeValues?: Item;
   };
-  const conditionHolds = (put: Put): boolean => {
-    const cond = put.ConditionExpression ?? '';
-    const existing = store.get(k(put.Item['PK'], put.Item['SK']));
-    if (cond.includes('attribute_not_exists')) return !existing;
-    if (cond.includes('version = :v')) {
-      return (
-        Boolean(existing) &&
-        existing?.['version'] === put.ExpressionAttributeValues?.[':v'] &&
-        (!cond.includes('tenantId = :t') ||
-          existing?.['tenantId'] === put.ExpressionAttributeValues?.[':t'])
-      );
-    }
-    return true;
+  /**
+   * Tiny DynamoDB condition evaluator: clauses joined by AND, optional
+   * parenthesised OR groups, `a = :v`, attribute_exists / attribute_not_exists.
+   */
+  const evalCondition = (
+    cond: string,
+    existing: Item | undefined,
+    values: Item | undefined
+  ): boolean => {
+    const splitTop = (expr: string, sep: string) => {
+      const parts: string[] = [];
+      let depth = 0;
+      let buf = '';
+      for (let i = 0; i < expr.length; i += 1) {
+        const ch = expr[i]!;
+        if (ch === '(') depth += 1;
+        if (ch === ')') depth -= 1;
+        if (depth === 0 && expr.startsWith(sep, i)) {
+          parts.push(buf);
+          buf = '';
+          i += sep.length - 1;
+        } else buf += ch;
+      }
+      parts.push(buf);
+      return parts.map(x => x.trim()).filter(Boolean);
+    };
+    const clause = (c: string): boolean => {
+      let x = c.trim();
+      if (x.startsWith('(') && x.endsWith(')')) x = x.slice(1, -1);
+      const ors = splitTop(x, ' OR ');
+      if (ors.length > 1) return ors.some(clause);
+      const ands = splitTop(x, ' AND ');
+      if (ands.length > 1) return ands.every(clause);
+      let m = /^attribute_not_exists\((\w+)\)$/.exec(x);
+      if (m)
+        return m[1] === 'PK'
+          ? !existing
+          : !existing || existing[m[1]!] === undefined;
+      m = /^attribute_exists\((\w+)\)$/.exec(x);
+      if (m) return Boolean(existing) && existing![m[1]!] !== undefined;
+      m = /^(\w+) = (:\w+)$/.exec(x);
+      if (m) return Boolean(existing) && existing![m[1]!] === values?.[m[2]!];
+      throw new Error(`fakeDdb: unsupported condition ${x}`);
+    };
+    return cond.trim() === '' ? true : clause(cond);
   };
+
+  const conditionHolds = (put: Put): boolean =>
+    evalCondition(
+      put.ConditionExpression ?? '',
+      store.get(k(put.Item['PK'], put.Item['SK'])),
+      put.ExpressionAttributeValues
+    );
 
   type Del = {
     Key: Item;

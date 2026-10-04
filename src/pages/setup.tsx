@@ -12,6 +12,7 @@ import TextField, { type TextFieldProps } from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { AuthCard } from '@/components/ui/AuthCard/AuthCard';
 import { useAuth } from '@/contexts/AuthContext';
+import { PendingInvites } from '@/features/team/components/JoinInvites';
 import { GateLoading, useTenant } from '@/features/tenant';
 import {
   AREA_UNITS,
@@ -37,6 +38,7 @@ type Values = {
 /** SCR-002 Tenant / farm initial setup (US-001, US-002). */
 export default function SetupPage() {
   const { t } = useTranslation(['setup', 'shell']);
+  const { t: tTeam } = useTranslation('team');
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
   const { selectTenant, refresh } = useTenant();
@@ -133,6 +135,11 @@ export default function SetupPage() {
 
   return (
     <AuthCard title={t('title')} subtitle={t('subtitle')} error={error} wide>
+      {/* Invited helpers join an existing farm instead of creating one (#37) */}
+      <PendingInvites
+        footer={tTeam('join.orCreate')}
+        onJoined={() => void router.replace('/')}
+      />
       <Stack component='form' spacing={2.5} onSubmit={onSubmit} noValidate>
         {section(t('sections.account'))}
         <TextField
