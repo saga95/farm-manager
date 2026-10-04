@@ -198,6 +198,47 @@ const schema = a.schema({
     harvests: a.ref('TreeHarvest').required().array().required(),
   }),
 
+  TreeYieldSummary: a.customType({
+    harvestCount: a.integer().required(),
+    lifetimeTotal: a.integer().required(),
+    currentYearTotal: a.integer().required(),
+    averagePerHarvest: a.float(),
+    best: a.integer(),
+    lastHarvestDate: a.string(),
+    lastQuantity: a.integer(),
+    daysSinceLast: a.integer(),
+  }),
+
+  Prediction: a.customType({
+    methodVersion: a.string().required(),
+    confidence: a.string().required(),
+    intervalCount: a.integer().required(),
+    harvestCount: a.integer().required(),
+    lastHarvestDate: a.string(),
+    medianIntervalDays: a.float(),
+    variability: a.float(),
+    highlyInconsistent: a.boolean().required(),
+    estimateDate: a.string(),
+    windowStart: a.string(),
+    windowEnd: a.string(),
+  }),
+
+  TreeHistory: a.customType({
+    tree: a.ref('Tree').required(),
+    harvests: a.ref('TreeHarvest').required().array().required(),
+    summary: a.ref('TreeYieldSummary').required(),
+    prediction: a.ref('Prediction').required(),
+  }),
+
+  DueTree: a.customType({
+    tree: a.ref('Tree').required(),
+    bucket: a.string().required(),
+    prediction: a.ref('Prediction'),
+    lastHarvestDate: a.string(),
+    lastQuantity: a.integer(),
+    daysSinceLast: a.integer(),
+  }),
+
   CreateTenantResult: a.customType({
     tenantId: a.id().required(),
     farmId: a.id().required(),
@@ -485,6 +526,29 @@ const schema = a.schema({
       availableOnly: a.boolean(),
     })
     .returns(a.ref('ProduceBatch').required().array().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  // ─── Tree history & planning (#59, #71–#74) ───────────────────────────────
+  getTreeHistory: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      treeId: a.id().required(),
+      today: a.string(),
+    })
+    .returns(a.ref('TreeHistory').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  listDueTrees: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      today: a.string(),
+    })
+    .returns(a.ref('DueTree').required().array().required())
     .authorization(allow => [allow.authenticated()])
     .handler(a.handler.function(farmApi)),
 });
