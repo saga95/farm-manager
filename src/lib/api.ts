@@ -452,3 +452,89 @@ export const completePluckingRound = async (
       expectedVersion: round.version,
     })
   ) as PluckingRound;
+
+// ─── Tree history & planning (#59, #71–#74) ──────────────────────────────────
+
+export interface TreeYieldSummary {
+  harvestCount: number;
+  lifetimeTotal: number;
+  currentYearTotal: number;
+  averagePerHarvest?: number | null;
+  best?: number | null;
+  lastHarvestDate?: string | null;
+  lastQuantity?: number | null;
+  daysSinceLast?: number | null;
+}
+
+export interface PredictionView {
+  methodVersion: string;
+  confidence: 'NO_PREDICTION' | 'LOW' | 'MEDIUM' | 'HIGH' | string;
+  intervalCount: number;
+  harvestCount: number;
+  lastHarvestDate?: string | null;
+  medianIntervalDays?: number | null;
+  variability?: number | null;
+  highlyInconsistent: boolean;
+  estimateDate?: string | null;
+  windowStart?: string | null;
+  windowEnd?: string | null;
+}
+
+export interface TreeHistory {
+  tree: Tree;
+  harvests: TreeHarvest[];
+  summary: TreeYieldSummary;
+  prediction: PredictionView;
+}
+
+export interface DueTree {
+  tree: Tree;
+  bucket: 'OVERDUE' | 'DUE_SOON' | 'UPCOMING' | 'NOT_ENOUGH_HISTORY' | string;
+  prediction?: PredictionView | null;
+  lastHarvestDate?: string | null;
+  lastQuantity?: number | null;
+  daysSinceLast?: number | null;
+}
+
+export const getTreeHistory = async (
+  tenantId: string,
+  treeId: string,
+  today?: string
+) => {
+  const h = unwrap(
+    await q('getTreeHistory')({ tenantId, treeId, ...(today ? { today } : {}) })
+  ) as TreeHistory;
+  return { ...h, harvests: [...h.harvests] };
+};
+
+export const listDueTrees = async (
+  tenantId: string,
+  farmId: string,
+  today?: string
+) => [
+  ...(unwrap(
+    await q('listDueTrees')({ tenantId, farmId, ...(today ? { today } : {}) })
+  ) as DueTree[]),
+];
+
+export interface ProduceBatch {
+  id: string;
+  cropCode: string;
+  sourceType: string;
+  sourceId?: string | null;
+  batchDate: string;
+  quantityReceived: number;
+  unit: string;
+  available: number;
+  status: string;
+}
+
+export const listProduceBatches = async (
+  tenantId: string,
+  farmId: string,
+  availableOnly = true
+) => [
+  ...(unwrap(
+    await q('listProduceBatches')({ tenantId, farmId, availableOnly })
+  ) as ProduceBatch[]),
+];

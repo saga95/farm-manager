@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import AccountTreeOutlined from '@mui/icons-material/AccountTreeOutlined';
 import CropFreeOutlined from '@mui/icons-material/CropFreeOutlined';
+import EventNoteOutlined from '@mui/icons-material/EventNoteOutlined';
 import EventRepeatOutlined from '@mui/icons-material/EventRepeatOutlined';
 import GrassOutlined from '@mui/icons-material/GrassOutlined';
 import ParkOutlined from '@mui/icons-material/ParkOutlined';
@@ -19,6 +20,11 @@ export default function FarmPage() {
             href: '/coconut/trees',
             label: t('farm.coconut'),
             icon: <ParkOutlined />,
+          },
+          {
+            href: '/coconut/planning',
+            label: t('farm.planning'),
+            icon: <EventNoteOutlined />,
           },
           {
             href: '/coconut/rounds',

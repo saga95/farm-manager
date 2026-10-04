@@ -12,20 +12,20 @@ src/features/<area>/
   __tests__/
 ```
 
-| Folder | Scope | Epic |
-| --- | --- | --- |
-| `tenant` | Tenant, members, roles, tenant context | #9 |
-| `farm` | Farm, Zone, GrowingSpace | #9 |
-| `coconut` | Tree registry & profile | #10 |
-| `media` | Upload, thumbnails, signed access | #10 |
-| `plucking` | Plucking rounds, Save & Next | #11 |
-| `samples` | Dehusked samples, size history | #12 |
-| `prediction` | Next-plucking estimate, planning | #13 |
-| `inventory` | Produce & farm-input inventory | #14 |
-| `buyers` | Buyers & size preferences | #15 |
-| `sales` | Sales & sale lines | #15 |
-| `polytunnel` | Production cycles, activities, generic harvests | #16 |
-| `analytics` | Dashboard & analytics | #17 |
+| Folder       | Scope                                           | Epic |
+| ------------ | ----------------------------------------------- | ---- |
+| `tenant`     | Tenant, members, roles, tenant context          | #9   |
+| `farm`       | Farm, Zone, GrowingSpace                        | #9   |
+| `coconut`    | Tree registry & profile                         | #10  |
+| `media`      | Upload, thumbnails, signed access               | #10  |
+| `plucking`   | Plucking rounds, Save & Next                    | #11  |
+| `samples`    | Dehusked samples, size history                  | #12  |
+| `prediction` | Next-plucking estimate, planning                | #13  |
+| `inventory`  | Produce & farm-input inventory                  | #14  |
+| `buyers`     | Buyers & size preferences                       | #15  |
+| `sales`      | Sales & sale lines                              | #15  |
+| `polytunnel` | Production cycles, activities, generic harvests | #16  |
+| `analytics`  | Dashboard & analytics                           | #17  |
 
 Rules:
 

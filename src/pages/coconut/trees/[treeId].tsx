@@ -2,9 +2,14 @@ import { useState } from 'react';
 import NextLink from 'next/link';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -16,7 +21,9 @@ import { EmptyState } from '@/components/ui/EmptyState/EmptyState';
 import { SummaryCard } from '@/components/ui/SummaryCard/SummaryCard';
 import { TreeDialog } from '@/features/coconut/components/TreeDialog';
 import { TreeStatusChip } from '@/features/coconut/components/TreeStatusChip';
-import { useTree } from '@/features/coconut/hooks';
+import { useTree, useTreeHistory } from '@/features/coconut/hooks';
+import { PredictionCard } from '@/features/prediction/components/PredictionCard';
+import { StatTile } from '@/components/ui/StatTile/StatTile';
 import { useZones } from '@/features/farm/hooks';
 import { useTenant } from '@/features/tenant';
 
@@ -42,6 +49,13 @@ export default function TreeProfilePage() {
       ? router.query['treeId']
       : undefined;
   const tree = useTree(treeId);
+  const history = useTreeHistory(treeId);
+  const summary = history.data?.summary;
+  const { i18n } = useTranslation();
+  const fmtDate = (iso: string) =>
+    new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(
+      new Date(`${iso}T00:00:00`)
+    );
   const zones = useZones(true);
   const { can } = useTenant();
   const [editing, setEditing] = useState(false);
@@ -131,12 +145,109 @@ export default function TreeProfilePage() {
             </CardContent>
           </Card>
 
+          {history.data && (
+            <>
+              {/* §7.2 summary tiles: missing values show "—", never 0 */}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gap: 1.5,
+                  gridTemplateColumns: {
+                    xs: 'repeat(2, 1fr)',
+                    sm: 'repeat(4, 1fr)',
+                  },
+                }}
+              >
+                <StatTile
+                  label={t('history.lastPlucked')}
+                  value={
+                    summary?.lastHarvestDate
+                      ? fmtDate(summary.lastHarvestDate)
+                      : null
+                  }
+                  caption={
+                    summary?.daysSinceLast != null
+                      ? t('history.daysAgo', { count: summary.daysSinceLast })
+                      : undefined
+                  }
+                />
+                <StatTile
+                  label={t('history.lastCount')}
+                  value={summary?.lastQuantity}
+                  unit={t('history.nuts')}
+                />
+                <StatTile
+                  label={t('history.average')}
+                  value={summary?.averagePerHarvest}
+                  unit={t('history.nuts')}
+                />
+                <StatTile
+                  label={t('history.best')}
+                  value={summary?.best}
+                  unit={t('history.nuts')}
+                />
+                <StatTile
+                  label={t('history.thisYear')}
+                  value={summary?.currentYearTotal}
+                  unit={t('history.nuts')}
+                />
+                <StatTile
+                  label={t('history.lifetime')}
+                  value={summary?.lifetimeTotal}
+                  unit={t('history.nuts')}
+                />
+                <StatTile
+                  label={t('history.records')}
+                  value={summary?.harvestCount}
+                />
+              </Box>
+              <PredictionCard prediction={history.data.prediction} />
+            </>
+          )}
+
           <SummaryCard
-            title={t('tree.history')}
+            title={t('history.title')}
             icon={<HistoryOutlined fontSize='small' />}
           >
-            {/* §7.2: "No history" must be distinguishable from "Recorded harvest = 0" */}
-            <EmptyState message={t('tree.noHistory')} />
+            {history.isLoading ? (
+              <Skeleton variant='rounded' height={120} aria-hidden />
+            ) : (history.data?.harvests ?? []).length === 0 ? (
+              /* §7.2: "No history" must be distinguishable from "Recorded harvest = 0" */
+              <EmptyState message={t('tree.noHistory')} />
+            ) : (
+              <List disablePadding aria-label={t('history.title')}>
+                {history.data!.harvests.map((h, i) => (
+                  <ListItem
+                    key={h.id}
+                    divider={i < history.data!.harvests.length - 1}
+                    disableGutters
+                  >
+                    <ListItemText
+                      primary={`${h.quantity ?? '—'} ${t('history.nuts')}`}
+                      secondary={fmtDate(h.harvestDate)}
+                      primaryTypographyProps={{ fontWeight: 600 }}
+                    />
+                    {h.recordQuality === 'APPROXIMATE' && (
+                      <Chip
+                        size='small'
+                        variant='outlined'
+                        label={t('history.approximate')}
+                        sx={{ mr: 1 }}
+                      />
+                    )}
+                    {h.roundId && (
+                      <Button
+                        component={NextLink}
+                        href={`/coconut/rounds/${h.roundId}`}
+                        size='small'
+                      >
+                        {t('history.viewRound')}
+                      </Button>
+                    )}
+                  </ListItem>
+                ))}
+              </List>
+            )}
           </SummaryCard>
         </Stack>
       )}
