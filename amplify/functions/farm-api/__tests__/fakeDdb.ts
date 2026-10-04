@@ -79,11 +79,30 @@ export function installFakeDdb() {
     )
       ? String(input.ExpressionAttributeValues?.[':sk'] ?? '')
       : null;
+    let items = [...store.values()]
+      .filter(i => i[pkAttr] === want)
+      .filter(i => prefix === null || String(i['SK']).startsWith(prefix));
+    if (input.Limit === undefined && !input.ExclusiveStartKey)
+      return { Items: items.map(i => structuredClone(i)) };
+    // Paged queries: sort by SK, honour direction, start key and limit
+    items = items.sort((a, b) =>
+      String(a['SK']).localeCompare(String(b['SK']))
+    );
+    if (input.ScanIndexForward === false) items.reverse();
+    const start = input.ExclusiveStartKey as Item | undefined;
+    if (start) {
+      const at = items.findIndex(
+        i => i['PK'] === start['PK'] && i['SK'] === start['SK']
+      );
+      items = items.slice(at + 1);
+    }
+    const page = input.Limit ? items.slice(0, input.Limit) : items;
+    const last = page.at(-1);
     return {
-      Items: [...store.values()]
-        .filter(i => i[pkAttr] === want)
-        .filter(i => prefix === null || String(i['SK']).startsWith(prefix))
-        .map(i => structuredClone(i)),
+      Items: page.map(i => structuredClone(i)),
+      ...(input.Limit && items.length > input.Limit && last
+        ? { LastEvaluatedKey: { PK: last['PK'], SK: last['SK'] } }
+        : {}),
     };
   });
 

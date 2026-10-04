@@ -60,3 +60,47 @@ export const txnIds = {
   reconcile: (entityId: string, version: number) =>
     `RECON#${entityId}#v${version}`,
 } as const;
+
+/** Manual stock movements a user can record on a batch (§11.3, US-017). */
+export const MOVEMENT_TYPES = [
+  'HOUSEHOLD_USE',
+  'DAMAGE',
+  'WASTE',
+  'ADJUSTMENT_IN',
+  'ADJUSTMENT_OUT',
+] as const satisfies readonly ProduceTxnType[];
+export type MovementType = (typeof MOVEMENT_TYPES)[number];
+
+/** AC-IN-004: adjustments change reconciled stock, so they need a reason. */
+export function reasonRequired(type: ProduceTxnType): boolean {
+  return type === 'ADJUSTMENT_IN' || type === 'ADJUSTMENT_OUT';
+}
+
+export class StockError extends Error {
+  constructor(
+    public readonly state: ProduceState,
+    public readonly available: number
+  ) {
+    super(`Only ${available} ${state.toLowerCase()} in stock`);
+    this.name = 'StockError';
+  }
+}
+
+/**
+ * Apply one transaction to a cached per-state balance. Never lets a state go
+ * below zero (AC-IN-002): throws StockError with what is actually available.
+ */
+export function applyTxn(
+  byState: Readonly<Record<ProduceState, number>>,
+  txn: ProduceTxn
+): Record<ProduceState, number> {
+  const next = balance([
+    { type: 'ADJUSTMENT_IN', quantity: byState.HUSKED, state: 'HUSKED' },
+    { type: 'ADJUSTMENT_IN', quantity: byState.DEHUSKED, state: 'DEHUSKED' },
+    txn,
+  ]).byState;
+  for (const s of PRODUCE_STATES) {
+    if (next[s] < 0) throw new StockError(s, byState[s]);
+  }
+  return next;
+}

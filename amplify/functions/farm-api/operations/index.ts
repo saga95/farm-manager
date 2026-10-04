@@ -34,7 +34,12 @@ import {
   listMedia,
 } from './media';
 import { recordCoconutSample } from './samples';
-import { listProduceBatches } from './inventory';
+import {
+  dehuskProduce,
+  getProduceBatch,
+  listProduceBatches,
+  recordProduceMovement,
+} from './inventory';
 import {
   completePluckingRound,
   createPluckingRound,
@@ -70,6 +75,9 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       recordTreeHarvest,
       completePluckingRound,
       listProduceBatches,
+      getProduceBatch,
+      recordProduceMovement,
+      dehuskProduce,
       getTreeHistory,
       listDueTrees,
       recordCoconutSample,

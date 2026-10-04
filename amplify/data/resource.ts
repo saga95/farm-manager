@@ -205,6 +205,34 @@ const schema = a.schema({
     createdAt: a.string(),
   }),
 
+  ProduceTxn: a.customType({
+    id: a.string().required(),
+    batchId: a.id().required(),
+    transactionType: a.string().required(),
+    quantity: a.float().required(),
+    unit: a.string().required(),
+    state: a.string(),
+    fromState: a.string(),
+    toState: a.string(),
+    transactionDate: a.string().required(),
+    sourceId: a.string(),
+    reason: a.string(),
+    notes: a.string(),
+    createdAt: a.string(),
+    createdBy: a.string(),
+  }),
+
+  ProduceMovementResult: a.customType({
+    batch: a.ref('ProduceBatch').required(),
+    transaction: a.ref('ProduceTxn').required(),
+  }),
+
+  ProduceBatchDetail: a.customType({
+    batch: a.ref('ProduceBatch').required(),
+    transactions: a.ref('ProduceTxn').required().array().required(),
+    nextToken: a.string(),
+  }),
+
   PluckingRoundDetail: a.customType({
     round: a.ref('PluckingRound').required(),
     harvests: a.ref('TreeHarvest').required().array().required(),
@@ -608,6 +636,48 @@ const schema = a.schema({
       availableOnly: a.boolean(),
     })
     .returns(a.ref('ProduceBatch').required().array().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  getProduceBatch: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      batchId: a.id().required(),
+      limit: a.integer(),
+      nextToken: a.string(),
+    })
+    .returns(a.ref('ProduceBatchDetail').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  recordProduceMovement: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      batchId: a.id().required(),
+      operationId: a.id().required(),
+      transactionType: a.string().required(),
+      quantity: a.integer().required(),
+      state: a.string().required(),
+      transactionDate: a.string().required(),
+      notes: a.string(),
+    })
+    .returns(a.ref('ProduceMovementResult').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  dehuskProduce: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      batchId: a.id().required(),
+      operationId: a.id().required(),
+      quantity: a.integer().required(),
+      transactionDate: a.string().required(),
+      notes: a.string(),
+    })
+    .returns(a.ref('ProduceMovementResult').required())
     .authorization(allow => [allow.authenticated()])
     .handler(a.handler.function(farmApi)),
 

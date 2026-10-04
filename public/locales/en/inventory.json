@@ -1,0 +1,63 @@
+{
+  "produce": {
+    "title": "Coconut stock",
+    "total": "In stock",
+    "husked": "Husked",
+    "dehusked": "Dehusked",
+    "nuts": "nuts",
+    "batches": "Stock by round",
+    "batchLabel": "Round of {{date}}",
+    "batchSummary": "{{husked}} husked · {{dehusked}} dehusked",
+    "empty": "No coconuts in stock. Completing a plucking round adds its nuts here.",
+    "showEmpty": "Show used-up batches",
+    "sizeNote": "Stock is counted in nuts, not by size. Sample sizes help you choose trees for a buyer; they don't tell how many of each size are in stock.",
+    "status": {
+      "AVAILABLE": "In stock",
+      "DEPLETED": "Used up",
+      "VOID": "Removed"
+    }
+  },
+  "batch": {
+    "title": "Stock from {{date}}",
+    "received": "Received",
+    "history": "Movements",
+    "loadMore": "Show older movements",
+    "noHistory": "No movements yet.",
+    "back": "Coconut stock",
+    "dehusk": "Dehusk",
+    "move": "Record use or adjustment",
+    "notFound": "This stock batch wasn't found."
+  },
+  "txn": {
+    "HARVEST_IN": "From plucking",
+    "SALE_OUT": "Sold",
+    "HOUSEHOLD_USE": "Household use",
+    "DAMAGE": "Damaged",
+    "WASTE": "Wasted",
+    "ADJUSTMENT_IN": "Adjustment (added)",
+    "ADJUSTMENT_OUT": "Adjustment (removed)",
+    "PROCESSING": "Dehusked",
+    "moved": "{{count}} husked → dehusked",
+    "in": "+{{count}} {{state}}",
+    "out": "−{{count}} {{state}}"
+  },
+  "dialog": {
+    "dehuskTitle": "Dehusk coconuts",
+    "dehuskIntro": "Move husked nuts to dehusked. The total stays the same.",
+    "moveTitle": "Record use or adjustment",
+    "type": "What happened?",
+    "state": "Which nuts?",
+    "quantity": "How many nuts",
+    "available": "{{count}} available",
+    "date": "Date",
+    "notes": "Note (optional)",
+    "reason": "Reason (required for adjustments)",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "invalidQuantity": "Enter a whole number from 1 to {{max}}.",
+    "needReason": "Add a reason for this adjustment.",
+    "failed": "Couldn't save. Please try again.",
+    "conflict": "Stock changed meanwhile. Please check the numbers and try again."
+  }
+}
