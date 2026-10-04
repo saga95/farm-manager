@@ -126,3 +126,22 @@ describe('autoAllocate (FIFO suggestion)', () => {
     });
   });
 });
+
+describe('decimal quantities (polytunnel kg, #96)', () => {
+  it('12.5 kg at 480 a kg; totals stay exact', () => {
+    const lines = [
+      { quantity: 12.5, unitPrice: 480 },
+      { quantity: 0.35, unitPrice: 99.99 },
+    ];
+    expect(lineAmount(lines[0]!)).toBe(6000);
+    expect(lineAmount(lines[1]!)).toBe(35);
+    expect(calculatedAmount(lines)).toBe(6035);
+    expect(saleTotals(lines).totalQuantity).toBe(12.85);
+    expect(
+      validateSale(lines, [
+        { batchId: 'b', state: 'FRESH', quantity: 12.5 },
+        { batchId: 'c', state: 'FRESH', quantity: 0.35 },
+      ])
+    ).toBeNull();
+  });
+});

@@ -7,6 +7,7 @@
  * other, and the difference is preserved with an optional reason.
  */
 
+import { type ProduceState, type StockByState, roundQty } from '../inventory';
 import { CLASSIFIED_SIZES, type ClassifiedSize } from '../samples';
 
 export const BUYER_STATUSES = ['ACTIVE', 'ARCHIVED'] as const;
@@ -44,18 +45,22 @@ export interface SaleLineInput {
 
 /** CALC-011: line amount = quantity × unit price. */
 export function lineAmount(line: SaleLineInput): number {
-  return fromCents(line.quantity * toCents(line.unitPrice));
+  // Quantities may be decimal (12.5 kg): round the line to whole cents
+  return fromCents(Math.round(line.quantity * toCents(line.unitPrice)));
 }
 
 /** CALC-012: calculated sale amount = Σ line amounts. */
 export function calculatedAmount(lines: readonly SaleLineInput[]): number {
   return fromCents(
-    lines.reduce((sum, l) => sum + l.quantity * toCents(l.unitPrice), 0)
+    lines.reduce(
+      (sum, l) => sum + Math.round(l.quantity * toCents(l.unitPrice)),
+      0
+    )
   );
 }
 
 export function totalQuantity(lines: readonly SaleLineInput[]): number {
-  return lines.reduce((sum, l) => sum + l.quantity, 0);
+  return roundQty(lines.reduce((sum, l) => sum + l.quantity, 0));
 }
 
 /**
@@ -79,7 +84,7 @@ export function saleTotals(
 
 // ─── Stock allocation (§13.5) ─────────────────────────────────────────────────
 
-export type StockState = 'HUSKED' | 'DEHUSKED';
+export type StockState = ProduceState;
 
 export interface Allocation {
   batchId: string;
@@ -93,7 +98,10 @@ export function mergeAllocations(allocs: readonly Allocation[]): Allocation[] {
   for (const a of allocs) {
     const k = `${a.batchId}#${a.state}`;
     const prev = map.get(k);
-    map.set(k, { ...a, quantity: (prev?.quantity ?? 0) + a.quantity });
+    map.set(k, {
+      ...a,
+      quantity: roundQty((prev?.quantity ?? 0) + a.quantity),
+    });
   }
   return [...map.values()].filter(a => a.quantity !== 0);
 }
@@ -122,7 +130,7 @@ export function validateSale(
   if (lines.length === 0 || totalQuantity(lines) <= 0)
     return { code: 'NO_LINES' };
   const sold = totalQuantity(lines);
-  const allocated = allocations.reduce((s, a) => s + a.quantity, 0);
+  const allocated = roundQty(allocations.reduce((s, a) => s + a.quantity, 0));
   if (sold !== allocated)
     return { code: 'ALLOCATION_MISMATCH', sold, allocated };
   return null;
@@ -131,7 +139,7 @@ export function validateSale(
 export interface BatchStock {
   batchId: string;
   batchDate: string;
-  available: Record<StockState, number>;
+  available: StockByState;
 }
 
 /**
@@ -149,7 +157,7 @@ export function autoAllocate(
     x.batchDate.localeCompare(y.batchDate)
   )) {
     if (left <= 0) break;
-    const take = Math.min(left, b.available[state]);
+    const take = Math.min(left, b.available[state] ?? 0);
     if (take > 0) {
       allocations.push({ batchId: b.batchId, state, quantity: take });
       left -= take;

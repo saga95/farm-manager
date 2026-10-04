@@ -120,3 +120,47 @@ describe('SaleForm (SCR-021, #86)', () => {
     expect(screen.getAllByLabelText('form.quantity')).toHaveLength(1);
   });
 });
+
+describe('SaleForm for polytunnel produce (#96, AC-PT-005)', () => {
+  const cucumber: ProduceBatch = {
+    id: 'cu1',
+    cropCode: 'CUCUMBER',
+    cropName: 'Cucumber',
+    sourceType: 'GENERIC_HARVEST',
+    batchDate: '2026-04-10',
+    quantityReceived: 12.5,
+    unit: 'KG',
+    available: 12.5,
+    availableByState: { FRESH: 12.5 },
+    status: 'AVAILABLE',
+    version: 1,
+  };
+
+  it('sells kg without size lines from fresh stock', () => {
+    const onSubmit = jest.fn();
+    render(
+      <SaleForm
+        buyers={buyers}
+        batches={[...batches, cucumber]}
+        currency='LKR'
+        today='2026-04-12'
+        saving={false}
+        onSubmit={onSubmit}
+        onCancel={jest.fn()}
+      />
+    );
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'form.crop' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Cucumber' }));
+    expect(screen.queryByLabelText('form.size')).not.toBeInTheDocument();
+    typeIn('form.quantityUnit', '10.5');
+    typeIn('form.price', '480');
+    fireEvent.click(screen.getByRole('button', { name: 'form.fill' }));
+    save();
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lines: [{ sizeClass: null, quantity: 10.5, unitPrice: 480 }],
+        allocations: [{ batchId: 'cu1', state: 'FRESH', quantity: 10.5 }],
+      })
+    );
+  });
+});

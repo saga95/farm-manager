@@ -16,9 +16,12 @@ const INBOUND = new Set(['HARVEST_IN', 'ADJUSTMENT_IN']);
 export function MovementList({
   transactions,
   label,
+  unit = 'NUT',
 }: {
   transactions: readonly ProduceTxn[];
   label: string;
+  /** Batch unit; fresh produce shows amounts in it ("+12.5 kg") */
+  unit?: string;
 }) {
   const { t, i18n } = useTranslation('inventory');
   const fmt = (iso: string) =>
@@ -31,13 +34,19 @@ export function MovementList({
   return (
     <List aria-label={label} disablePadding>
       {transactions.map((txn, i) => {
+        const inbound = INBOUND.has(txn.transactionType);
         const amount =
           txn.transactionType === 'PROCESSING'
             ? t('txn.moved', { count: txn.quantity })
-            : t(INBOUND.has(txn.transactionType) ? 'txn.in' : 'txn.out', {
-                count: txn.quantity,
-                state: stateName(txn.state),
-              });
+            : txn.state === 'FRESH'
+              ? t(inbound ? 'txn.inQty' : 'txn.outQty', {
+                  count: txn.quantity,
+                  unit: t(`units.${unit}`, { defaultValue: unit }),
+                })
+              : t(inbound ? 'txn.in' : 'txn.out', {
+                  count: txn.quantity,
+                  state: stateName(txn.state),
+                });
         return (
           <ListItem
             key={txn.id}

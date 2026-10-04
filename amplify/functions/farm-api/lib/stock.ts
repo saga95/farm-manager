@@ -9,15 +9,36 @@
 import type { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import {
   type ProduceState,
+  type ProduceTxn,
   type ProduceTxnType,
+  type StockByState,
   StockError,
   applyTxn,
+  statesFor,
+  stockOf,
+  stockTotal,
 } from '../../../../src/domain/inventory';
 import { keys } from '../../../../src/domain/keys';
 import { type Item, getById } from './crud';
 import { tableName } from './db';
 import { ApiError, notFound } from './errors';
 import type { TenantContext } from './operation';
+
+/** The movement must fit this batch: its states, and whole nuts for coconut. */
+export function checkBatchTxn(batch: Item, txn: ProduceTxn) {
+  const crop = String(batch['cropCode'] ?? 'COCONUT');
+  const states = statesFor(crop);
+  if (txn.type === 'PROCESSING' && crop !== 'COCONUT')
+    throw new ApiError('VALIDATION', 'batch: only coconuts are dehusked');
+  for (const s of [txn.state, txn.fromState, txn.toState])
+    if (s && !states.includes(s))
+      throw new ApiError(
+        'VALIDATION',
+        `state: this stock has no ${s.toLowerCase()} state`
+      );
+  if ((batch['unit'] ?? 'NUT') === 'NUT' && !Number.isInteger(txn.quantity))
+    throw new ApiError('VALIDATION', 'quantity: whole nuts only');
+}
 
 export type TxItems = NonNullable<TransactWriteCommandInput['TransactItems']>;
 
@@ -58,16 +79,14 @@ export async function stockWrites(
       throw notFound('Stock batch not found');
     if (batch['status'] === 'VOID')
       throw new ApiError('VALIDATION', 'batch: this stock was removed');
-    const stored = (batch['availableByState'] ?? {}) as Partial<
-      Record<ProduceState, number>
-    >;
-    let byState: Record<ProduceState, number> = {
-      HUSKED: stored.HUSKED ?? 0,
-      DEHUSKED: stored.DEHUSKED ?? 0,
-    };
+    let byState: StockByState = stockOf(
+      String(batch['cropCode'] ?? 'COCONUT'),
+      batch['availableByState'] as StockByState
+    );
     for (const c of list) {
       const type =
         c.out > 0 ? (c.outType ?? 'SALE_OUT') : (c.inType ?? 'ADJUSTMENT_IN');
+      checkBatchTxn(batch, { type, quantity: Math.abs(c.out), state: c.state });
       try {
         byState = applyTxn(byState, {
           type,
@@ -107,7 +126,7 @@ export async function stockWrites(
         },
       });
     }
-    const available = byState.HUSKED + byState.DEHUSKED;
+    const available = stockTotal(byState);
     items.push({
       Put: {
         TableName: tableName(),

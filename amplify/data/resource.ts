@@ -756,6 +756,7 @@ const stock = a.schema({
     tenantId: a.id().required(),
     farmId: a.id().required(),
     cropCode: a.string().required(),
+    cropName: a.string(),
     sourceType: a.string().required(),
     sourceId: a.id(),
     batchDate: a.string().required(),
@@ -869,7 +870,7 @@ const stock = a.schema({
       batchId: a.id().required(),
       operationId: a.id().required(),
       transactionType: a.string().required(),
-      quantity: a.integer().required(),
+      quantity: a.float().required(),
       state: a.string().required(),
       transactionDate: a.string().required(),
       notes: a.string(),
@@ -884,7 +885,7 @@ const stock = a.schema({
       tenantId: a.id().required(),
       batchId: a.id().required(),
       operationId: a.id().required(),
-      quantity: a.integer().required(),
+      quantity: a.float().required(),
       transactionDate: a.string().required(),
       notes: a.string(),
     })
@@ -992,7 +993,7 @@ const sales = a.schema({
 
   SaleLine: a.customType({
     sizeClass: a.string(),
-    quantity: a.integer().required(),
+    quantity: a.float().required(),
     unitPrice: a.float().required(),
     lineAmount: a.float().required(),
   }),
@@ -1000,7 +1001,7 @@ const sales = a.schema({
   SaleAllocation: a.customType({
     batchId: a.id().required(),
     state: a.string().required(),
-    quantity: a.integer().required(),
+    quantity: a.float().required(),
   }),
 
   Sale: a.customType({
@@ -1014,7 +1015,7 @@ const sales = a.schema({
     quantityUnit: a.string().required(),
     lines: a.ref('SaleLine').required().array().required(),
     allocations: a.ref('SaleAllocation').required().array().required(),
-    totalQuantity: a.integer().required(),
+    totalQuantity: a.float().required(),
     calculatedAmount: a.float().required(),
     actualAmountReceived: a.float(),
     difference: a.float(),
@@ -1225,10 +1226,44 @@ const growing = a.schema({
     createdBy: a.string(),
   }),
 
+  CycleHarvest: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    farmId: a.id().required(),
+    productionCycleId: a.id().required(),
+    cropCode: a.string().required(),
+    cropName: a.string(),
+    harvestDate: a.string().required(),
+    quantity: a.float().required(),
+    unit: a.string().required(),
+    qualityNote: a.string(),
+    notes: a.string(),
+    batchId: a.id().required(),
+    version: a.integer().required(),
+    createdAt: a.string(),
+  }),
+
   CycleDetail: a.customType({
     cycle: a.ref('ProductionCycle').required(),
     activities: a.ref('FarmActivity').required().array().required(),
+    harvests: a.ref('CycleHarvest').required().array().required(),
   }),
+
+  recordCycleHarvest: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      cycleId: a.id().required(),
+      harvestId: a.id().required(),
+      harvestDate: a.string().required(),
+      quantity: a.float().required(),
+      unit: a.string().required(),
+      qualityNote: a.string(),
+      notes: a.string(),
+    })
+    .returns(a.ref('CycleHarvest').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
 
   listCycles: a
     .query()

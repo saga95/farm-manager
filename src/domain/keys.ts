@@ -194,6 +194,19 @@ export const keys: KeyBuilders = {
     SK: `A${SEP}${assertId('activityDate', activityDate)}${SEP}${assertId('activityId', activityId)}`,
   }),
 
+  /** Harvests of a production cycle, by date (§14.2). */
+  cycleHarvestPk: (tenantId: string, cycleId: string): string =>
+    `${t(tenantId)}${SEP}GH${SEP}${assertId('cycleId', cycleId)}`,
+  cycleHarvest: (
+    tenantId: string,
+    cycleId: string,
+    harvestDate: string,
+    harvestId: string
+  ): Key => ({
+    PK: keys.cycleHarvestPk(tenantId, cycleId),
+    SK: `H${SEP}${assertId('harvestDate', harvestDate)}${SEP}${assertId('harvestId', harvestId)}`,
+  }),
+
   /** Farm-input item (§12) within a farm. */
   inputItem: (tenantId: string, farmId: string, itemId: string): Key => ({
     PK: keys.farmPk(tenantId, farmId),
@@ -319,6 +332,13 @@ interface KeyBuilders {
     targetId: string,
     activityDate: string,
     activityId: string
+  ) => Key;
+  cycleHarvestPk: (tenantId: string, cycleId: string) => string;
+  cycleHarvest: (
+    tenantId: string,
+    cycleId: string,
+    harvestDate: string,
+    harvestId: string
   ) => Key;
   buyer: (tenantId: string, buyerId: string) => Key;
   sale: (

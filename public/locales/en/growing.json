@@ -43,7 +43,13 @@
     "noActivity": "Nothing recorded yet. Record watering, fertiliser, weeding and more.",
     "notFound": "This cycle wasn't found.",
     "removeActivity": "Remove",
-    "used": "Used {{quantity}} {{unit}} of {{material}}"
+    "used": "Used {{quantity}} {{unit}} of {{material}}",
+    "harvest": "Record harvest",
+    "harvests": "Harvests",
+    "noHarvest": "No harvests yet.",
+    "harvested": "Harvested",
+    "harvestLine": "{{quantity}} {{unit}}",
+    "toStock": "In produce stock"
   },
   "activity": {
     "WATERING": "Watering",
@@ -103,5 +109,20 @@
     "needCrop": "Enter the crop.",
     "needZone": "Choose a zone.",
     "failed": "Couldn't save. Please try again."
+  },
+  "harvestDialog": {
+    "title": "Record harvest: {{crop}}",
+    "quantity": "How much",
+    "unit": "Unit",
+    "date": "Date",
+    "quality": "Quality (optional)",
+    "qualityHelp": "For example \"Grade A\" or \"some small\".",
+    "notes": "Notes (optional)",
+    "toStock": "This goes into produce stock, ready to sell.",
+    "save": "Save harvest",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "invalid": "Enter an amount above 0. Pieces are whole; kg and g allow up to 3 decimals.",
+    "failed": "Couldn't save the harvest. Please try again."
   }
 }

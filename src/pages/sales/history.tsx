@@ -21,6 +21,7 @@ import { useTenant } from '@/features/tenant';
 /** SCR-023 Sales history: newest first, by buyer and date, paginated (#89). */
 export default function SalesHistoryPage() {
   const { t, i18n } = useTranslation('sales');
+  const { t: ti } = useTranslation('inventory');
   const router = useRouter();
   const { can, tenant } = useTenant();
   const buyers = useBuyers(true);
@@ -123,8 +124,11 @@ export default function SalesHistoryPage() {
           rows={list.map(s => ({
             id: s.id,
             primary: `${fmtDate(s.saleDate)} · ${s.buyerName ?? t('sale.walkIn')}`,
-            secondary: t('history.row', {
-              nuts: s.totalQuantity,
+            secondary: t('history.rowQty', {
+              quantity: s.totalQuantity,
+              unit: ti(`units.${s.quantityUnit ?? 'NUT'}`, {
+                defaultValue: s.quantityUnit ?? '',
+              }),
               amount: money(
                 s.actualAmountReceived ?? s.calculatedAmount,
                 s.currency || tenant?.currency || 'LKR'

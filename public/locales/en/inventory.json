@@ -1,6 +1,6 @@
 {
   "produce": {
-    "title": "Coconut stock",
+    "title": "Produce stock",
     "total": "In stock",
     "husked": "Husked",
     "dehusked": "Dehusked",
@@ -8,14 +8,20 @@
     "batches": "Stock by round",
     "batchLabel": "Round of {{date}}",
     "batchSummary": "{{husked}} husked · {{dehusked}} dehusked",
-    "empty": "No coconuts in stock. Completing a plucking round adds its nuts here.",
+    "empty": "No produce in stock. Completing a plucking round or recording a crop harvest adds it here.",
     "showEmpty": "Show used-up batches",
-    "sizeNote": "Stock is counted in nuts, not by size. Sample sizes help you choose trees for a buyer; they don't tell how many of each size are in stock.",
+    "sizeNote": "Coconut stock is counted in nuts, not by size. Sample sizes help you choose trees for a buyer; they don't tell how many of each size are in stock.",
     "status": {
       "AVAILABLE": "In stock",
       "DEPLETED": "Used up",
       "VOID": "Removed"
-    }
+    },
+    "coconuts": "Coconuts",
+    "otherProduce": "Other produce",
+    "fresh": "Fresh",
+    "inStockQty": "{{quantity}} {{unit}} in stock",
+    "cropBatchLabel": "{{crop}} · {{date}}",
+    "qtySummary": "{{quantity}} {{unit}}"
   },
   "batch": {
     "title": "Stock from {{date}}",
@@ -23,10 +29,11 @@
     "history": "Movements",
     "loadMore": "Show older movements",
     "noHistory": "No movements yet.",
-    "back": "Coconut stock",
+    "back": "Produce stock",
     "dehusk": "Dehusk",
     "move": "Record use or adjustment",
-    "notFound": "This stock batch wasn't found."
+    "notFound": "This stock batch wasn't found.",
+    "cropTitle": "{{crop}} from {{date}}"
   },
   "txn": {
     "HARVEST_IN": "From plucking",
@@ -39,7 +46,9 @@
     "PROCESSING": "Dehusked",
     "moved": "{{count}} husked → dehusked",
     "in": "+{{count}} {{state}}",
-    "out": "−{{count}} {{state}}"
+    "out": "−{{count}} {{state}}",
+    "inQty": "+{{count}} {{unit}}",
+    "outQty": "−{{count}} {{unit}}"
   },
   "dialog": {
     "dehuskTitle": "Dehusk coconuts",
@@ -47,7 +56,7 @@
     "moveTitle": "Record use or adjustment",
     "type": "What happened?",
     "state": "Which nuts?",
-    "quantity": "How many nuts",
+    "quantity": "Quantity ({{unit}})",
     "available": "{{count}} available",
     "date": "Date",
     "notes": "Note (optional)",
@@ -58,7 +67,8 @@
     "invalidQuantity": "Enter a whole number from 1 to {{max}}.",
     "needReason": "Add a reason for this adjustment.",
     "failed": "Couldn't save. Please try again.",
-    "conflict": "Stock changed meanwhile. Please check the numbers and try again."
+    "conflict": "Stock changed meanwhile. Please check the numbers and try again.",
+    "invalidDecimal": "Enter an amount above 0 (up to {{max}}), with at most 3 decimals."
   },
   "inputs": {
     "title": "Farm inputs",
@@ -142,5 +152,11 @@
     "tooMuch": "Only {{quantity}} {{unit}} in stock.",
     "needReason": "Add a reason for this adjustment.",
     "failed": "Couldn't save. Please try again."
+  },
+  "units": {
+    "NUT": "nuts",
+    "KG": "kg",
+    "G": "g",
+    "COUNT": "pieces"
   }
 }

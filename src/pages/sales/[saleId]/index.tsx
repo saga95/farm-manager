@@ -52,6 +52,10 @@ export default function SalePage() {
     );
   const batchDate = new Map((batches.data ?? []).map(b => [b.id, b.batchDate]));
   const removed = Boolean(s?.deletedAt);
+  const isCoconut = (s?.cropCode ?? 'COCONUT') === 'COCONUT';
+  const unitLabel = ti(`units.${s?.quantityUnit ?? 'NUT'}`, {
+    defaultValue: s?.quantityUnit ?? '',
+  });
   const fail = (e: unknown) =>
     setError(
       e instanceof ApiError && e.code === 'VALIDATION'
@@ -117,7 +121,11 @@ export default function SalePage() {
               gap: 1.5,
             }}
           >
-            <StatTile label={t('sale.totalNuts')} value={s.totalQuantity} />
+            <StatTile
+              label={isCoconut ? t('sale.totalNuts') : t('sale.totalQty')}
+              value={s.totalQuantity}
+              unit={isCoconut ? undefined : unitLabel}
+            />
             <StatTile
               label={t('sale.calculated')}
               value={money.format(s.calculatedAmount)}
@@ -152,13 +160,21 @@ export default function SalePage() {
                   disableGutters
                 >
                   <ListItemText
-                    primary={t('sale.line', {
-                      size: l.sizeClass
-                        ? ts(`sizes.${l.sizeClass}`)
-                        : t('sale.anySize'),
-                      quantity: l.quantity,
-                      price: money.format(l.unitPrice),
-                    })}
+                    primary={
+                      isCoconut
+                        ? t('sale.line', {
+                            size: l.sizeClass
+                              ? ts(`sizes.${l.sizeClass}`)
+                              : t('sale.anySize'),
+                            quantity: l.quantity,
+                            price: money.format(l.unitPrice),
+                          })
+                        : t('sale.lineGeneric', {
+                            quantity: l.quantity,
+                            unit: unitLabel,
+                            price: money.format(l.unitPrice),
+                          })
+                    }
                   />
                   <Typography sx={{ fontVariantNumeric: 'tabular-nums' }}>
                     {money.format(l.lineAmount)}
@@ -176,17 +192,27 @@ export default function SalePage() {
               {s.allocations.map(a => (
                 <ListItem key={`${a.batchId}${a.state}`} disableGutters>
                   <ListItemText
-                    primary={t('sale.stockLine', {
-                      quantity: a.quantity,
-                      state: ti(
-                        a.state === 'HUSKED'
-                          ? 'produce.husked'
-                          : 'produce.dehusked'
-                      ).toLowerCase(),
-                      date: batchDate.get(a.batchId)
-                        ? fmtDate(batchDate.get(a.batchId)!)
-                        : '…',
-                    })}
+                    primary={
+                      isCoconut
+                        ? t('sale.stockLine', {
+                            quantity: a.quantity,
+                            state: ti(
+                              a.state === 'HUSKED'
+                                ? 'produce.husked'
+                                : 'produce.dehusked'
+                            ).toLowerCase(),
+                            date: batchDate.get(a.batchId)
+                              ? fmtDate(batchDate.get(a.batchId)!)
+                              : '…',
+                          })
+                        : t('sale.stockLineQty', {
+                            quantity: a.quantity,
+                            unit: unitLabel,
+                            label: batchDate.get(a.batchId)
+                              ? fmtDate(batchDate.get(a.batchId)!)
+                              : '…',
+                          })
+                    }
                   />
                 </ListItem>
               ))}

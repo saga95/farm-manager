@@ -14,11 +14,14 @@ import { z } from 'zod';
 import {
   MOVEMENT_TYPES,
   PRODUCE_STATES,
-  type ProduceState,
   type ProduceTxn,
+  type StockByState,
   StockError,
   applyTxn,
   reasonRequired,
+  roundQty,
+  stockOf,
+  stockTotal,
   txnIds,
 } from '../../../../src/domain/inventory';
 import { isUlid, keys } from '../../../../src/domain/keys';
@@ -26,10 +29,16 @@ import { type Item, getById, getItem, queryPrefix, toView } from '../lib/crud';
 import { ddb, tableName } from '../lib/db';
 import { ApiError, notFound } from '../lib/errors';
 import { type TenantContext, tenantOperation } from '../lib/operation';
+import { checkBatchTxn } from '../lib/stock';
 
 const id = z.string().refine(isUlid, 'must be a ULID');
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must be YYYY-MM-DD');
-const quantity = z.number().int().positive().max(1_000_000);
+/** Up to 3 decimals (kg); whole numbers are enforced for nuts per batch. */
+const quantity = z
+  .number()
+  .positive()
+  .max(1_000_000)
+  .refine(n => roundQty(n) === n, 'at most 3 decimals');
 
 export const listProduceBatches = tenantOperation({
   name: 'listProduceBatches',
@@ -61,12 +70,11 @@ async function loadBatch(ctx: TenantContext, batchId: string) {
   return b;
 }
 
-const byStateOf = (batch: Item): Record<ProduceState, number> => {
-  const stored = (batch['availableByState'] ?? {}) as Partial<
-    Record<ProduceState, number>
-  >;
-  return { HUSKED: stored.HUSKED ?? 0, DEHUSKED: stored.DEHUSKED ?? 0 };
-};
+const byStateOf = (batch: Item): StockByState =>
+  stockOf(
+    String(batch['cropCode'] ?? 'COCONUT'),
+    batch['availableByState'] as StockByState
+  );
 
 /** Write one txn + the batch's new cached balance atomically; idempotent on txnId. */
 async function applyToBatch(
@@ -82,6 +90,7 @@ async function applyToBatch(
 ) {
   const { tenantId } = ctx.access;
   const batch = await loadBatch(ctx, batchId);
+  checkBatchTxn(batch, txn);
   if (batch['status'] === 'VOID')
     throw new ApiError('VALIDATION', 'batch: this stock was removed');
   const txnKey = keys.produceTxn(
@@ -96,7 +105,7 @@ async function applyToBatch(
   if (existing)
     return { batch: toView<Item>(batch), transaction: toView<Item>(existing) };
 
-  let byState: Record<ProduceState, number>;
+  let byState: StockByState;
   try {
     byState = applyTxn(byStateOf(batch), txn);
   } catch (e) {
@@ -107,7 +116,7 @@ async function applyToBatch(
       );
     throw e;
   }
-  const available = byState.HUSKED + byState.DEHUSKED;
+  const available = stockTotal(byState);
   const nextBatch: Item = {
     ...batch,
     available,

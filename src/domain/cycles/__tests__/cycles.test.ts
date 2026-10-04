@@ -1,7 +1,9 @@
 import {
+  addHarvestTotal,
   canMoveCycle,
   cropCodeOf,
   defaultCycleName,
+  isValidHarvestQuantity,
   nextCycleStatuses,
 } from '..';
 
@@ -36,5 +38,19 @@ describe('crop codes and names', () => {
 
   it('names a cycle by crop and month', () => {
     expect(defaultCycleName('Ginger', '2026-01-15')).toBe('Ginger 2026-01');
+  });
+});
+
+describe('harvest quantities (§14.2, AC-PT-003)', () => {
+  it('weights allow decimals; counts are whole', () => {
+    expect(isValidHarvestQuantity(12.5, 'KG')).toBe(true);
+    expect(isValidHarvestQuantity(12.5555, 'KG')).toBe(false);
+    expect(isValidHarvestQuantity(12.5, 'COUNT')).toBe(false);
+    expect(isValidHarvestQuantity(0, 'KG')).toBe(false);
+  });
+  it('keeps running totals per unit (AC-PC-003)', () => {
+    expect(addHarvestTotal(addHarvestTotal({}, 'KG', 12.5), 'KG', 0.1)).toEqual(
+      { KG: 12.6 }
+    );
   });
 });

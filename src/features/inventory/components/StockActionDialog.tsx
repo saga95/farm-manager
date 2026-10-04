@@ -28,9 +28,11 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {
   MOVEMENT_TYPES,
   type MovementType,
+  type ProduceState,
+  type StockByState,
   reasonRequired,
+  roundQty,
 } from '@/domain/inventory';
-import type { ProduceState } from '@/lib/api';
 
 export type StockAction = 'dehusk' | 'move';
 
@@ -45,7 +47,10 @@ export interface StockActionValues {
 export interface StockActionDialogProps {
   open: boolean;
   action: StockAction;
-  available: Record<ProduceState, number>;
+  /** Per-state balance of the batch (coconut: husked/dehusked; others: fresh) */
+  available: StockByState;
+  /** Batch unit: NUT (whole numbers) or KG / G / COUNT */
+  unit?: string;
   today: string;
   saving: boolean;
   error?: string | null | undefined;
@@ -57,6 +62,7 @@ export function StockActionDialog({
   open,
   action,
   available,
+  unit = 'NUT',
   today,
   saving,
   error,
@@ -69,7 +75,8 @@ export function StockActionDialog({
   const titleId = useId();
   const stateId = useId();
   const [type, setType] = useState<MovementType>('HOUSEHOLD_USE');
-  const [state, setState] = useState<ProduceState>('HUSKED');
+  const states = Object.keys(available) as ProduceState[];
+  const [state, setState] = useState<ProduceState>(states[0] ?? 'HUSKED');
   const [quantity, setQuantity] = useState('');
   const [date, setDate] = useState(today);
   const [notes, setNotes] = useState('');
@@ -78,24 +85,37 @@ export function StockActionDialog({
   useEffect(() => {
     if (!open) return;
     setType('HOUSEHOLD_USE');
-    setState('HUSKED');
+    setState(
+      (Object.keys(available)[0] as ProduceState | undefined) ?? 'HUSKED'
+    );
     setQuantity('');
     setDate(today);
     setNotes('');
     setProblem(null);
-  }, [open, action, today]);
+  }, [open, action, today, available]);
 
   const dehusking = action === 'dehusk';
   const effectiveState: ProduceState = dehusking ? 'HUSKED' : state;
   const adding = !dehusking && type === 'ADJUSTMENT_IN';
-  const max = adding ? 1_000_000 : available[effectiveState];
+  const max = adding ? 1_000_000 : (available[effectiveState] ?? 0);
+  const whole = unit === 'NUT' || unit === 'COUNT';
+  const unitLabel = t(`units.${unit}`, { defaultValue: unit });
+  const stateLabel = (s: ProduceState) =>
+    s === 'HUSKED'
+      ? t('produce.husked')
+      : s === 'DEHUSKED'
+        ? t('produce.dehusked')
+        : t('produce.fresh');
   const needsReason = !dehusking && reasonRequired(type);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const n = Number(quantity);
-    if (!Number.isInteger(n) || n < 1 || n > max) {
-      setProblem(t('dialog.invalidQuantity', { max }));
+    const ok = whole ? Number.isInteger(n) : roundQty(n) === n;
+    if (!ok || !(n > 0) || n > max) {
+      setProblem(
+        t(whole ? 'dialog.invalidQuantity' : 'dialog.invalidDecimal', { max })
+      );
       return;
     }
     const note = notes.trim() === '' ? null : notes.trim();
@@ -153,37 +173,41 @@ export function StockActionDialog({
                   </MenuItem>
                 ))}
               </TextField>
-              <Stack spacing={1}>
-                <Typography id={stateId} variant='subtitle2'>
-                  {t('dialog.state')}
-                </Typography>
-                <ToggleButtonGroup
-                  exclusive
-                  fullWidth
-                  value={state}
-                  onChange={(_, v: ProduceState | null) => v && setState(v)}
-                  aria-labelledby={stateId}
-                >
-                  <ToggleButton value='HUSKED'>
-                    {t('produce.husked')}
-                  </ToggleButton>
-                  <ToggleButton value='DEHUSKED'>
-                    {t('produce.dehusked')}
-                  </ToggleButton>
-                </ToggleButtonGroup>
-              </Stack>
+              {states.length > 1 && (
+                <Stack spacing={1}>
+                  <Typography id={stateId} variant='subtitle2'>
+                    {t('dialog.state')}
+                  </Typography>
+                  <ToggleButtonGroup
+                    exclusive
+                    fullWidth
+                    value={state}
+                    onChange={(_, v: ProduceState | null) => v && setState(v)}
+                    aria-labelledby={stateId}
+                  >
+                    {states.map(s => (
+                      <ToggleButton key={s} value={s}>
+                        {stateLabel(s)}
+                      </ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
+                </Stack>
+              )}
             </>
           )}
           <TextField
-            label={t('dialog.quantity')}
+            label={t('dialog.quantity', { unit: unitLabel })}
             value={quantity}
-            onChange={e => setQuantity(e.target.value.replace(/\D/g, ''))}
-            inputMode='numeric'
-            inputProps={{ pattern: '[0-9]*' }}
+            onChange={e =>
+              setQuantity(e.target.value.replace(whole ? /\D/g : /[^\d.]/g, ''))
+            }
+            inputMode={whole ? 'numeric' : 'decimal'}
             helperText={
               adding
                 ? undefined
-                : t('dialog.available', { count: available[effectiveState] })
+                : t('dialog.available', {
+                    count: available[effectiveState] ?? 0,
+                  })
             }
           />
           <TextField
