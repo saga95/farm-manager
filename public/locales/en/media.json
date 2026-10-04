@@ -1,0 +1,33 @@
+{
+  "strip": {
+    "title": "Photos",
+    "add": "Add photos",
+    "empty": "No photos yet.",
+    "rejected_one": "{{count}} file wasn't added. Use a JPEG, PNG, WebP or HEIC photo under 15 MB.",
+    "rejected_other": "{{count}} files weren't added. Use JPEG, PNG, WebP or HEIC photos under 15 MB.",
+    "open": "Open photo {{index}} of {{total}}",
+    "processing": "Processing",
+    "list": "Photos of {{name}}"
+  },
+  "queue": {
+    "QUEUED": "Waiting to upload",
+    "UPLOADING": "Uploading…",
+    "FAILED": "Upload failed",
+    "retry": "Retry",
+    "remove": "Remove",
+    "saved": "Your record is saved. Photos upload in the background."
+  },
+  "viewer": {
+    "title": "Photo {{index}} of {{total}}",
+    "close": "Close",
+    "previous": "Previous photo",
+    "next": "Next photo",
+    "taken": "Taken {{date}}",
+    "loading": "Loading full photo…",
+    "failed": "Couldn't load the full photo. Showing the preview.",
+    "archive": "Remove photo",
+    "confirmArchive": "Remove this photo? It can be restored by an admin.",
+    "confirm": "Remove",
+    "cancel": "Keep"
+  }
+}

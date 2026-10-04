@@ -37,21 +37,27 @@ export interface PresignedUpload {
   fields: Record<string, string>;
 }
 
-/** Presigned POST locked to one key, one content type and a size range. */
+/**
+ * Presigned POST locked to one key and a size range, and either one exact
+ * content type or (for thumbnails) any `image/*` type the client sets.
+ */
 export async function presignUpload(
   tenantId: string,
   key: string,
-  contentType: string,
+  contentType: string | { startsWith: string },
   maxBytes: number
 ): Promise<PresignedUpload> {
+  const exact = typeof contentType === 'string';
   return createPresignedPost(s3, {
     Bucket: bucket(),
     Key: guard(key, tenantId),
     Conditions: [
       ['content-length-range', 1, maxBytes],
-      ['eq', '$Content-Type', contentType],
+      exact
+        ? ['eq', '$Content-Type', contentType]
+        : ['starts-with', '$Content-Type', contentType.startsWith],
     ],
-    Fields: { 'Content-Type': contentType },
+    ...(exact ? { Fields: { 'Content-Type': contentType } } : {}),
     Expires: UPLOAD_URL_TTL,
   });
 }

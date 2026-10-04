@@ -53,8 +53,8 @@
 
 **Change to decision 4.** There is no `sharp` Lambda. The client makes the thumbnail:
 - it draws the photo onto a canvas, at most 480 px on the long edge;
-- it encodes the result as WebP;
-- it uploads the WebP next to the original, through a second presigned POST (`image/webp`, max 512 KB).
+- it encodes the result as WebP, or as JPEG where the browser can't encode WebP (Safari);
+- it uploads the thumbnail to `…/{mediaId}/thumb` next to the original, through a second presigned POST (any `image/*` type, max 512 KB).
 
 `completeMediaUpload` checks that **both** objects exist (HeadObject) before it sets `status=READY`.
 
