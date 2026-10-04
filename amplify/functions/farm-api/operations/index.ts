@@ -15,6 +15,13 @@ import {
 } from './corrections';
 import { createTenant } from './createTenant';
 import {
+  createInputItem,
+  getInputItem,
+  listInputItems,
+  recordInputMovement,
+  updateInputItem,
+} from './inputs';
+import {
   createSpace,
   createZone,
   listFarms,
@@ -78,6 +85,11 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       getProduceBatch,
       recordProduceMovement,
       dehuskProduce,
+      listInputItems,
+      getInputItem,
+      createInputItem,
+      updateInputItem,
+      recordInputMovement,
       getTreeHistory,
       listDueTrees,
       recordCoconutSample,
