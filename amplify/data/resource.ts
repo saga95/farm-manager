@@ -188,51 +188,6 @@ const schema = a.schema({
     updatedBy: a.string(),
   }),
 
-  ProduceBatch: a.customType({
-    id: a.id().required(),
-    tenantId: a.id().required(),
-    farmId: a.id().required(),
-    cropCode: a.string().required(),
-    sourceType: a.string().required(),
-    sourceId: a.id(),
-    batchDate: a.string().required(),
-    quantityReceived: a.float().required(),
-    unit: a.string().required(),
-    available: a.float().required(),
-    availableByState: a.json(),
-    status: a.string().required(),
-    version: a.integer().required(),
-    createdAt: a.string(),
-  }),
-
-  ProduceTxn: a.customType({
-    id: a.string().required(),
-    batchId: a.id().required(),
-    transactionType: a.string().required(),
-    quantity: a.float().required(),
-    unit: a.string().required(),
-    state: a.string(),
-    fromState: a.string(),
-    toState: a.string(),
-    transactionDate: a.string().required(),
-    sourceId: a.string(),
-    reason: a.string(),
-    notes: a.string(),
-    createdAt: a.string(),
-    createdBy: a.string(),
-  }),
-
-  ProduceMovementResult: a.customType({
-    batch: a.ref('ProduceBatch').required(),
-    transaction: a.ref('ProduceTxn').required(),
-  }),
-
-  ProduceBatchDetail: a.customType({
-    batch: a.ref('ProduceBatch').required(),
-    transactions: a.ref('ProduceTxn').required().array().required(),
-    nextToken: a.string(),
-  }),
-
   PluckingRoundDetail: a.customType({
     round: a.ref('PluckingRound').required(),
     harvests: a.ref('TreeHarvest').required().array().required(),
@@ -626,61 +581,6 @@ const schema = a.schema({
     .authorization(allow => [allow.authenticated()])
     .handler(a.handler.function(farmApi)),
 
-  // ─── Produce inventory (#76) ───────────────────────────────────────────────
-  listProduceBatches: a
-    .query()
-    .arguments({
-      tenantId: a.id().required(),
-      farmId: a.id().required(),
-      cropCode: a.string(),
-      availableOnly: a.boolean(),
-    })
-    .returns(a.ref('ProduceBatch').required().array().required())
-    .authorization(allow => [allow.authenticated()])
-    .handler(a.handler.function(farmApi)),
-
-  getProduceBatch: a
-    .query()
-    .arguments({
-      tenantId: a.id().required(),
-      batchId: a.id().required(),
-      limit: a.integer(),
-      nextToken: a.string(),
-    })
-    .returns(a.ref('ProduceBatchDetail').required())
-    .authorization(allow => [allow.authenticated()])
-    .handler(a.handler.function(farmApi)),
-
-  recordProduceMovement: a
-    .mutation()
-    .arguments({
-      tenantId: a.id().required(),
-      batchId: a.id().required(),
-      operationId: a.id().required(),
-      transactionType: a.string().required(),
-      quantity: a.integer().required(),
-      state: a.string().required(),
-      transactionDate: a.string().required(),
-      notes: a.string(),
-    })
-    .returns(a.ref('ProduceMovementResult').required())
-    .authorization(allow => [allow.authenticated()])
-    .handler(a.handler.function(farmApi)),
-
-  dehuskProduce: a
-    .mutation()
-    .arguments({
-      tenantId: a.id().required(),
-      batchId: a.id().required(),
-      operationId: a.id().required(),
-      quantity: a.integer().required(),
-      transactionDate: a.string().required(),
-      notes: a.string(),
-    })
-    .returns(a.ref('ProduceMovementResult').required())
-    .authorization(allow => [allow.authenticated()])
-    .handler(a.handler.function(farmApi)),
-
   // ─── Tree history & planning (#59, #71–#74) ───────────────────────────────
   getTreeHistory: a
     .query()
@@ -842,10 +742,237 @@ const schema = a.schema({
     .handler(a.handler.function(farmApi)),
 });
 
+/**
+ * Stock bounded context: produce inventory (§11) and farm inputs (§12).
+ * A separate `a.schema` combined below: one schema per bounded context keeps
+ * Amplify's type inference under TypeScript's instantiation-depth limit
+ * (TS2589 appeared once everything lived in a single schema). Types here may
+ * only `a.ref` types defined in this same schema.
+ */
+const stock = a.schema({
+  ProduceBatch: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    farmId: a.id().required(),
+    cropCode: a.string().required(),
+    sourceType: a.string().required(),
+    sourceId: a.id(),
+    batchDate: a.string().required(),
+    quantityReceived: a.float().required(),
+    unit: a.string().required(),
+    available: a.float().required(),
+    availableByState: a.json(),
+    status: a.string().required(),
+    version: a.integer().required(),
+    createdAt: a.string(),
+  }),
+
+  ProduceTxn: a.customType({
+    id: a.string().required(),
+    batchId: a.id().required(),
+    transactionType: a.string().required(),
+    quantity: a.float().required(),
+    unit: a.string().required(),
+    state: a.string(),
+    fromState: a.string(),
+    toState: a.string(),
+    transactionDate: a.string().required(),
+    sourceId: a.string(),
+    reason: a.string(),
+    notes: a.string(),
+    createdAt: a.string(),
+    createdBy: a.string(),
+  }),
+
+  ProduceMovementResult: a.customType({
+    batch: a.ref('ProduceBatch').required(),
+    transaction: a.ref('ProduceTxn').required(),
+  }),
+
+  ProduceBatchDetail: a.customType({
+    batch: a.ref('ProduceBatch').required(),
+    transactions: a.ref('ProduceTxn').required().array().required(),
+    nextToken: a.string(),
+  }),
+
+  InputItem: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    farmId: a.id().required(),
+    name: a.string().required(),
+    category: a.string().required(),
+    unit: a.string().required(),
+    quantity: a.float().required(),
+    reorderLevel: a.float(),
+    lowStock: a.boolean().required(),
+    notes: a.string(),
+    status: a.string().required(),
+    version: a.integer().required(),
+    updatedAt: a.string(),
+  }),
+
+  InputTxn: a.customType({
+    id: a.string().required(),
+    itemId: a.id().required(),
+    transactionType: a.string().required(),
+    quantity: a.float().required(),
+    unit: a.string().required(),
+    transactionDate: a.string().required(),
+    balanceAfter: a.float(),
+    reason: a.string(),
+    notes: a.string(),
+    createdAt: a.string(),
+    createdBy: a.string(),
+  }),
+
+  InputMovementResult: a.customType({
+    item: a.ref('InputItem').required(),
+    transaction: a.ref('InputTxn').required(),
+  }),
+
+  InputItemDetail: a.customType({
+    item: a.ref('InputItem').required(),
+    transactions: a.ref('InputTxn').required().array().required(),
+    nextToken: a.string(),
+  }),
+
+  // ─── Produce inventory (#76) ───────────────────────────────────────────────
+  listProduceBatches: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      cropCode: a.string(),
+      availableOnly: a.boolean(),
+    })
+    .returns(a.ref('ProduceBatch').required().array().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  getProduceBatch: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      batchId: a.id().required(),
+      limit: a.integer(),
+      nextToken: a.string(),
+    })
+    .returns(a.ref('ProduceBatchDetail').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  recordProduceMovement: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      batchId: a.id().required(),
+      operationId: a.id().required(),
+      transactionType: a.string().required(),
+      quantity: a.integer().required(),
+      state: a.string().required(),
+      transactionDate: a.string().required(),
+      notes: a.string(),
+    })
+    .returns(a.ref('ProduceMovementResult').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  dehuskProduce: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      batchId: a.id().required(),
+      operationId: a.id().required(),
+      quantity: a.integer().required(),
+      transactionDate: a.string().required(),
+      notes: a.string(),
+    })
+    .returns(a.ref('ProduceMovementResult').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  // ─── Farm inputs (#80, #81, §12) ─────────────────────────────────────────
+  listInputItems: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      includeArchived: a.boolean(),
+    })
+    .returns(a.ref('InputItem').required().array().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  getInputItem: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      itemId: a.id().required(),
+      limit: a.integer(),
+      nextToken: a.string(),
+    })
+    .returns(a.ref('InputItemDetail').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  createInputItem: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      itemId: a.id().required(),
+      name: a.string().required(),
+      category: a.string().required(),
+      unit: a.string().required(),
+      reorderLevel: a.float(),
+      notes: a.string(),
+      openingQuantity: a.float(),
+      openingDate: a.string(),
+    })
+    .returns(a.ref('InputItem').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  updateInputItem: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      itemId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      name: a.string(),
+      category: a.string(),
+      reorderLevel: a.float(),
+      clearReorderLevel: a.boolean(),
+      notes: a.string(),
+      status: a.string(),
+    })
+    .returns(a.ref('InputItem').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  recordInputMovement: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      itemId: a.id().required(),
+      operationId: a.id().required(),
+      transactionType: a.string().required(),
+      quantity: a.float().required(),
+      decrease: a.boolean(),
+      transactionDate: a.string().required(),
+      reason: a.string(),
+      notes: a.string(),
+    })
+    .returns(a.ref('InputMovementResult').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+});
+
+/** Client typing for the core schema (the web client uses untyped calls). */
 export type Schema = ClientSchema<typeof schema>;
 
 export const data = defineData({
-  schema,
+  schema: a.combine([schema, stock]),
   authorizationModes: {
     defaultAuthorizationMode: 'userPool',
   },

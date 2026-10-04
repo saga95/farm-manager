@@ -52,6 +52,7 @@
 ## Amendment 1 (2026-10-04): thumbnails are made on the device
 
 **Change to decision 4.** There is no `sharp` Lambda. The client makes the thumbnail:
+
 - it draws the photo onto a canvas, at most 480 px on the long edge;
 - it encodes the result as WebP, or as JPEG where the browser can't encode WebP (Safari);
 - it uploads the thumbnail to `…/{mediaId}/thumb` next to the original, through a second presigned POST (any `image/*` type, max 512 KB).
@@ -59,12 +60,14 @@
 `completeMediaUpload` checks that **both** objects exist (HeadObject) before it sets `status=READY`.
 
 Why:
+
 - `sharp` ships a native binary. It must be bundled for Linux arm64, and bundling has already broken an Amplify deploy (#118).
 - Phones already decode the photo to show a preview, so making the thumbnail there costs nothing extra.
 - Re-encoding through a canvas drops all EXIF data, so the thumbnail never carries GPS. The original is kept untouched as evidence.
 - `capturedAt` is read on the device from EXIF `DateTimeOriginal` when present, with the file's last-modified time as the fallback. It is sent with `initiateMediaUpload`.
 
 Other implementation notes:
+
 - **IAM:** farm-api's IAM statement (`s3:PutObject`/`GetObject` on `tenants/*`, plus `ListBucket` limited to that prefix so a missing object returns 404) is attached in the function's own stack. That keeps the dependency one-way, data → storage.
 - **Storage paths:** the template's `uploads/*`, `assets/*` and `user/{entity_id}/*` storage paths are removed.
 - **Client views:** views never include storage keys, only presigned URLs.

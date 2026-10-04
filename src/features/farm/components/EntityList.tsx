@@ -14,6 +14,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
+import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined';
 
 export interface EntityRow {
   id: string;
@@ -21,6 +22,8 @@ export interface EntityRow {
   secondary?: string | undefined;
   /** Status text chip (e.g. "Unused", "Archived") */
   badge?: string | undefined;
+  /** "warning" adds an icon + warning colour; the text still carries the meaning */
+  badgeTone?: 'default' | 'warning' | undefined;
 }
 
 export interface EntityListProps {
@@ -50,7 +53,17 @@ export function EntityList({ label, rows, onSelect, empty }: EntityListProps) {
                 primaryTypographyProps={{ fontWeight: 600 }}
               />
               {row.badge && (
-                <Chip size='small' label={row.badge} variant='outlined' />
+                <Chip
+                  size='small'
+                  label={row.badge}
+                  variant='outlined'
+                  {...(row.badgeTone === 'warning'
+                    ? {
+                        color: 'warning' as const,
+                        icon: <WarningAmberOutlined aria-hidden />,
+                      }
+                    : {})}
+                />
               )}
             </Stack>
           );

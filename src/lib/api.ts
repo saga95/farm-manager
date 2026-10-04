@@ -878,3 +878,114 @@ export const restorePluckingRound = async (
       expectedVersion: round.version,
     })
   ) as PluckingRound;
+
+// ─── Farm inputs (#80, #81, §12) ────────────────────────────────────────────
+
+export interface InputItem {
+  id: string;
+  farmId: string;
+  name: string;
+  category: string;
+  unit: string;
+  quantity: number;
+  reorderLevel?: number | null;
+  lowStock: boolean;
+  notes?: string | null;
+  status: string;
+  version: number;
+}
+
+export interface InputTxnView {
+  id: string;
+  itemId: string;
+  transactionType: string;
+  quantity: number;
+  unit: string;
+  transactionDate: string;
+  balanceAfter?: number | null;
+  reason?: string | null;
+  notes?: string | null;
+  createdAt?: string | null;
+}
+
+export const listInputItems = async (
+  tenantId: string,
+  farmId: string,
+  includeArchived = false
+) => [
+  ...(unwrap(
+    await q('listInputItems')({ tenantId, farmId, includeArchived })
+  ) as InputItem[]),
+];
+
+export const getInputItem = async (
+  tenantId: string,
+  itemId: string,
+  nextToken?: string | null
+) => {
+  const d = unwrap(
+    await q('getInputItem')({ tenantId, itemId, nextToken: nextToken ?? null })
+  ) as {
+    item: InputItem;
+    transactions: InputTxnView[];
+    nextToken?: string | null;
+  };
+  return {
+    item: d.item,
+    transactions: [...d.transactions],
+    nextToken: d.nextToken ?? null,
+  };
+};
+
+export interface InputItemFields {
+  name: string;
+  category: string;
+  unit: string;
+  reorderLevel: number | null;
+  notes: string | null;
+}
+
+export const createInputItem = async (
+  tenantId: string,
+  input: InputItemFields & {
+    farmId: string;
+    itemId: string;
+    openingQuantity: number | null;
+    openingDate: string;
+  }
+) => unwrap(await mu('createInputItem')({ tenantId, ...input })) as InputItem;
+
+export const updateInputItem = async (
+  tenantId: string,
+  item: InputItem,
+  changes: Partial<Omit<InputItemFields, 'unit'>> & {
+    status?: string;
+    clearReorderLevel?: boolean;
+  }
+) =>
+  unwrap(
+    await mu('updateInputItem')({
+      tenantId,
+      itemId: item.id,
+      expectedVersion: item.version,
+      ...changes,
+    })
+  ) as InputItem;
+
+export const recordInputMovement = async (
+  tenantId: string,
+  input: {
+    itemId: string;
+    operationId: string;
+    transactionType: string;
+    quantity: number;
+    decrease: boolean;
+    transactionDate: string;
+    reason: string | null;
+    notes: string | null;
+  }
+) =>
+  unwrap(await mu('recordInputMovement')({ tenantId, ...input })) as {
+    item: InputItem;
+    transaction: InputTxnView;
+  };

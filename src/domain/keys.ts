@@ -150,6 +150,24 @@ export const keys: KeyBuilders = {
     SK: `S${SEP}${assertId('harvestDate', harvestDate)}${SEP}${assertId('harvestId', harvestId)}`,
   }),
 
+  /** Farm-input item (§12) within a farm. */
+  inputItem: (tenantId: string, farmId: string, itemId: string): Key => ({
+    PK: keys.farmPk(tenantId, farmId),
+    SK: `INPUT${SEP}${assertId('itemId', itemId)}`,
+  }),
+  /** Farm-input transaction; txnId is deterministic per operation (ADR-0004). */
+  inputTxnPk: (tenantId: string, itemId: string): string =>
+    `${t(tenantId)}${SEP}I${SEP}${assertId('itemId', itemId)}`,
+  inputTxn: (
+    tenantId: string,
+    itemId: string,
+    txnDate: string,
+    txnId: string
+  ): Key => ({
+    PK: keys.inputTxnPk(tenantId, itemId),
+    SK: `TX${SEP}${assertId('txnDate', txnDate)}${SEP}${txnId}`,
+  }),
+
   /** Photos attached to one entity, oldest first (ULID order) (ADR-0003). */
   mediaPk: (tenantId: string, entityId: string): string =>
     `${t(tenantId)}${SEP}M${SEP}${assertId('entityId', entityId)}`,
@@ -182,6 +200,7 @@ export const keys: KeyBuilders = {
     rounds: 'ROUND#',
     batches: 'BATCH#',
     media: 'MEDIA#',
+    inputs: 'INPUT#',
   },
   tenantPk: t,
 };
@@ -246,6 +265,14 @@ interface KeyBuilders {
     harvestDate: string,
     harvestId: string
   ) => Key;
+  inputItem: (tenantId: string, farmId: string, itemId: string) => Key;
+  inputTxnPk: (tenantId: string, itemId: string) => string;
+  inputTxn: (
+    tenantId: string,
+    itemId: string,
+    txnDate: string,
+    txnId: string
+  ) => Key;
   mediaPk: (tenantId: string, entityId: string) => string;
   media: (tenantId: string, entityId: string, mediaId: string) => Key;
   byId: (id: string) => { GSI2PK: string };
@@ -266,7 +293,8 @@ interface KeyBuilders {
       | 'trees'
       | 'rounds'
       | 'batches'
-      | 'media',
+      | 'media'
+      | 'inputs',
       string
     >
   >;
