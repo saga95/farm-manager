@@ -3,7 +3,7 @@ import '@aws-amplify/ui-react/styles.css';
 import type { AppProps } from 'next/app';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { DM_Sans } from 'next/font/google';
+import localFont from 'next/font/local';
 import { AppCacheProvider } from '@mui/material-nextjs/v14-pagesRouter';
 import CssBaseline from '@mui/material/CssBaseline';
 import GlobalStyles from '@mui/material/GlobalStyles';
@@ -26,13 +26,35 @@ import { useTranslation } from 'react-i18next';
 export { reportWebVitals } from '@/lib/webVitals';
 
 // ─── Font ───────────────────────────────────────────────────────────────────────
-// Self-hosted by next/font; exposed as --font-body so tokens.typography.fontFamily
-// resolves to it everywhere, including MUI portals rendered outside the app root.
-
-const dmSans = DM_Sans({
-  subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '600', '700'],
+// DM Sans is bundled from @fontsource (no network fetch at build time: Google
+// Fonts downloads failed intermittently in CI). Exposed as --font-body so
+// tokens.typography.fontFamily resolves to it everywhere, including MUI portals.
+// Sinhala/Tamil scripts will need their own fonts when those locales land.
+const dmSans = localFont({
+  src: [
+    {
+      path: '../../node_modules/@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff2',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../../node_modules/@fontsource/dm-sans/files/dm-sans-latin-500-normal.woff2',
+      weight: '500',
+      style: 'normal',
+    },
+    {
+      path: '../../node_modules/@fontsource/dm-sans/files/dm-sans-latin-600-normal.woff2',
+      weight: '600',
+      style: 'normal',
+    },
+    {
+      path: '../../node_modules/@fontsource/dm-sans/files/dm-sans-latin-700-normal.woff2',
+      weight: '700',
+      style: 'normal',
+    },
+  ],
   display: 'swap',
+  fallback: ['Helvetica Neue', 'Arial', 'sans-serif'],
 });
 
 // ─── Amplify configuration ─────────────────────────────────────────────────────
