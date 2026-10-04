@@ -10,13 +10,19 @@
  */
 
 import { TransactionCanceledException } from '@aws-sdk/client-dynamodb';
-import { QueryCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  QueryCommand,
+  TransactWriteCommand,
+  type TransactWriteCommandInput,
+} from '@aws-sdk/lib-dynamodb';
 import { ulid } from 'ulid';
 import { z } from 'zod';
 import {
   INACTIVE_STATUSES,
+  SYSTEM_CROPS,
   type TreeStatus,
 } from '../../../../src/domain/coconut';
+import { txnIds } from '../../../../src/domain/inventory';
 import { isUlid, keys } from '../../../../src/domain/keys';
 import {
   MAX_TREES_PER_ROUND,
@@ -24,6 +30,7 @@ import {
   RECORD_QUALITIES,
   type RoundStatus,
   isValidQuantity,
+  roundTotal,
 } from '../../../../src/domain/plucking';
 import {
   type Item,
@@ -416,5 +423,171 @@ export const recordTreeHarvest = tenantOperation({
       action: 'harvest.update',
     });
     return toView(updated);
+  },
+});
+
+// ─── Completion → produce inventory (#55, AC-PR-005/006, CALC-015) ──────────────
+
+export const completePluckingRound = tenantOperation({
+  name: 'completePluckingRound',
+  entitlement: 'round.record',
+  input: z.object({
+    tenantId: z.string().min(1),
+    roundId: id,
+    expectedVersion: z.number().int().positive(),
+  }),
+  handler: async (input, ctx) => {
+    const { tenantId } = ctx.access;
+    const round = await loadRound(ctx, input.roundId);
+    // Idempotent: a retried completion returns the completed round (no second batch)
+    if (round['status'] === 'COMPLETE') return toView(round);
+    assertOpen(round);
+    if (round['version'] !== input.expectedVersion) {
+      throw new ApiError('CONFLICT', 'Round changed; reload and try again');
+    }
+
+    const harvests = (await roundHarvests(ctx, input.roundId)).filter(
+      h => !h['deletedAt']
+    );
+    if (harvests.length === 0)
+      throw new ApiError(
+        'VALIDATION',
+        'Record at least one tree before completing'
+      );
+
+    const planned = (round['plannedTreeIds'] as string[]) ?? [];
+    const recorded = new Set(harvests.map(h => String(h['treeId'])));
+    // Planned trees never recorded are closed as skipped (no zero harvests, DQ-001)
+    const skipped = [
+      ...new Set([
+        ...((round['skippedTreeIds'] as string[]) ?? []),
+        ...planned.filter(t => !recorded.has(t)),
+      ]),
+    ];
+    const total = roundTotal(
+      harvests.map(h => ({
+        treeId: String(h['treeId']),
+        quantity: h['quantity'] as number,
+      }))
+    );
+
+    const TableName = tableName();
+    const farmId = String(round['farmId']);
+    const batchDate = String(round['roundDate']);
+    const batchId = ulid();
+    const txnId = txnIds.roundHarvestIn(input.roundId);
+
+    const completed: Item = {
+      ...round,
+      status: 'COMPLETE',
+      skippedTreeIds: skipped,
+      totalNuts: total,
+      batchId: total > 0 ? batchId : undefined,
+      completedAt: ctx.now,
+      completedBy: ctx.userId,
+      version: input.expectedVersion + 1,
+      updatedAt: ctx.now,
+      updatedBy: ctx.userId,
+    };
+
+    const items: NonNullable<TransactWriteCommandInput['TransactItems']> = [
+      {
+        Put: {
+          TableName,
+          Item: completed,
+          ConditionExpression: 'version = :v AND tenantId = :t',
+          ExpressionAttributeValues: {
+            ':v': input.expectedVersion,
+            ':t': tenantId,
+          },
+        },
+      },
+      {
+        Put: {
+          TableName,
+          Item: auditItem(ctx, input.roundId, 'round.complete', {
+            totalNuts: total,
+            recorded: recorded.size,
+          }),
+        },
+      },
+    ];
+
+    if (total > 0) {
+      items.push(
+        {
+          Put: {
+            TableName,
+            Item: {
+              ...keys.produceBatch(
+                tenantId,
+                farmId,
+                SYSTEM_CROPS.COCONUT.code,
+                batchDate,
+                batchId
+              ),
+              ...keys.byId(batchId),
+              GSI2SK: 'PRODUCEBATCH',
+              entityType: 'ProduceBatch',
+              id: batchId,
+              tenantId,
+              farmId,
+              cropCode: SYSTEM_CROPS.COCONUT.code,
+              sourceType: 'PLUCKING_ROUND',
+              sourceId: input.roundId,
+              batchDate,
+              quantityReceived: total,
+              unit: 'NUT',
+              // Cached balance, updated in the same transaction as every txn (ADR-0002)
+              available: total,
+              availableByState: { HUSKED: total, DEHUSKED: 0 },
+              status: 'AVAILABLE',
+              version: 1,
+              createdAt: ctx.now,
+              createdBy: ctx.userId,
+            },
+            ConditionExpression: 'attribute_not_exists(PK)',
+          },
+        },
+        {
+          Put: {
+            TableName,
+            Item: {
+              ...keys.produceTxn(tenantId, batchId, batchDate, txnId),
+              entityType: 'ProduceInventoryTxn',
+              id: txnId,
+              tenantId,
+              farmId,
+              batchId,
+              transactionType: 'HARVEST_IN',
+              quantity: total,
+              unit: 'NUT',
+              state: 'HUSKED',
+              transactionDate: batchDate,
+              sourceId: input.roundId,
+              createdAt: ctx.now,
+              createdBy: ctx.userId,
+            },
+            ConditionExpression: 'attribute_not_exists(PK)',
+          },
+        }
+      );
+    }
+
+    try {
+      await ddb.send(
+        new TransactWriteCommand({
+          // DynamoDB also de-duplicates identical retries for 10 minutes
+          ClientRequestToken: `complete-${input.roundId}-v${input.expectedVersion}`,
+          TransactItems: items,
+        })
+      );
+      return toView(completed);
+    } catch (e) {
+      if (!(e instanceof TransactionCanceledException)) throw e;
+      const latest = await loadRound(ctx, input.roundId);
+      if (latest['status'] === 'COMPLETE') return toView(latest); // completed by an earlier attempt
+      throw new ApiError('CONFLICT', 'Round changed; reload and try again');
+    }
   },
 });

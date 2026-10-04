@@ -326,3 +326,139 @@ describe('validation and access', () => {
     ).rejects.toThrow(/^FORBIDDEN/);
   });
 });
+
+describe('completePluckingRound → produce inventory (AC-PR-005/006, CALC-015)', () => {
+  type Batch = {
+    id: string;
+    quantityReceived: number;
+    available: number;
+    sourceId: string;
+    availableByState: Record<string, number>;
+  };
+
+  it('completes once, creates one coconut batch and one HARVEST_IN txn equal to the round total', async () => {
+    const round = await newRound(['C-001', 'C-002', 'C-003']);
+    await record(round.id, 'C-001', 13);
+    await record(round.id, 'C-003', 20);
+    const done = (await call('completePluckingRound', {
+      tenantId: T,
+      roundId: round.id,
+      expectedVersion: 1,
+    })) as Round & {
+      totalNuts: number;
+      batchId: string;
+    };
+    expect(done).toMatchObject({
+      status: 'COMPLETE',
+      totalNuts: 33,
+      skippedTreeIds: [tree('C-002')],
+    });
+
+    const batches = (await call('listProduceBatches', {
+      tenantId: T,
+      farmId: F,
+    })) as Batch[];
+    expect(batches).toHaveLength(1);
+    expect(batches[0]).toMatchObject({
+      id: done.batchId,
+      quantityReceived: 33,
+      available: 33,
+      sourceId: round.id,
+    });
+    expect(batches[0]!.availableByState).toEqual({ HUSKED: 33, DEHUSKED: 0 });
+
+    const txns = [...fake.store.values()].filter(
+      i => i['entityType'] === 'ProduceInventoryTxn'
+    );
+    expect(txns).toHaveLength(1);
+    expect(txns[0]).toMatchObject({
+      id: `HARVEST_IN#ROUND#${round.id}`,
+      quantity: 33,
+      transactionType: 'HARVEST_IN',
+    });
+  });
+
+  it('a retried completion returns the completed round and never adds stock twice (AC-PR-006)', async () => {
+    const round = await newRound(['C-001']);
+    await record(round.id, 'C-001', 10);
+    const a = (await call('completePluckingRound', {
+      tenantId: T,
+      roundId: round.id,
+      expectedVersion: 1,
+    })) as Round;
+    const b = (await call('completePluckingRound', {
+      tenantId: T,
+      roundId: round.id,
+      expectedVersion: 1,
+    })) as Round;
+    expect(b).toMatchObject({ id: a.id, status: 'COMPLETE' });
+    expect(
+      [...fake.store.values()].filter(i => i['entityType'] === 'ProduceBatch')
+    ).toHaveLength(1);
+    expect(
+      [...fake.store.values()].filter(
+        i => i['entityType'] === 'ProduceInventoryTxn'
+      )
+    ).toHaveLength(1);
+  });
+
+  it('closes the round for further capture', async () => {
+    const round = await newRound(['C-001', 'C-002']);
+    await record(round.id, 'C-001', 10);
+    await call('completePluckingRound', {
+      tenantId: T,
+      roundId: round.id,
+      expectedVersion: 1,
+    });
+    await expect(record(round.id, 'C-002', 4)).rejects.toThrow(
+      /^VALIDATION: Round is no longer open/
+    );
+  });
+
+  it('refuses to complete a round with no recorded trees', async () => {
+    const round = await newRound(['C-001']);
+    await expect(
+      call('completePluckingRound', {
+        tenantId: T,
+        roundId: round.id,
+        expectedVersion: 1,
+      })
+    ).rejects.toThrow(/^VALIDATION: Record at least one tree/);
+  });
+
+  it('rejects a stale version (someone edited the plan meanwhile)', async () => {
+    const round = await newRound(['C-001', 'C-002']);
+    await record(round.id, 'C-001', 10);
+    await call('updateRoundPlan', {
+      tenantId: T,
+      roundId: round.id,
+      expectedVersion: 1,
+      skipTreeIds: [tree('C-002')],
+    });
+    await expect(
+      call('completePluckingRound', {
+        tenantId: T,
+        roundId: round.id,
+        expectedVersion: 1,
+      })
+    ).rejects.toThrow(/^CONFLICT/);
+  });
+
+  it('a round whose recorded trees all yielded 0 completes without a batch', async () => {
+    const round = await newRound(['C-001']);
+    await record(round.id, 'C-001', 0);
+    const done = (await call('completePluckingRound', {
+      tenantId: T,
+      roundId: round.id,
+      expectedVersion: 1,
+    })) as {
+      totalNuts: number;
+      batchId?: string | null;
+    };
+    expect(done.totalNuts).toBe(0);
+    expect(done.batchId ?? null).toBeNull();
+    expect(
+      [...fake.store.values()].filter(i => i['entityType'] === 'ProduceBatch')
+    ).toHaveLength(0);
+  });
+});
