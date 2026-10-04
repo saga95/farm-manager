@@ -240,6 +240,79 @@ export const listInputItems = tenantOperation({
   },
 });
 
+/**
+ * Transaction items for one movement on a farm-input item: the item's new
+ * cached quantity (version-conditioned) + the movement (deterministic id).
+ * Shared with farm activities that use an input (#94).
+ */
+export function inputMovementWrites(
+  ctx: TenantContext,
+  item: Item,
+  txnId: string,
+  t: {
+    type: (typeof INPUT_TXN_TYPES)[number];
+    quantity: number;
+    date: string;
+    reason?: string | null | undefined;
+    notes?: string | null | undefined;
+  }
+) {
+  let next: number;
+  try {
+    next = applyInputTxn(Number(item['quantity'] ?? 0), {
+      type: t.type,
+      quantity: t.quantity,
+    });
+  } catch (e) {
+    if (e instanceof InputStockError)
+      throw new ApiError(
+        'VALIDATION',
+        `quantity: only ${e.available} ${String(item['unit']).toLowerCase()} of ${String(item['name'])} in stock`
+      );
+    throw e;
+  }
+  const nextItem: Item = {
+    ...item,
+    quantity: next,
+    version: Number(item['version']) + 1,
+    updatedAt: ctx.now,
+    updatedBy: ctx.userId,
+  };
+  const txn = txnItem(ctx, item, txnId, {
+    type: t.type,
+    quantity: t.quantity,
+    date: t.date,
+    reason: t.reason ?? null,
+    notes: t.notes ?? null,
+    balanceAfter: next,
+  });
+  const items: NonNullable<TransactWriteCommandInput['TransactItems']> = [
+    {
+      Put: {
+        TableName: tableName(),
+        Item: nextItem,
+        ConditionExpression: 'version = :v AND tenantId = :t',
+        ExpressionAttributeValues: {
+          ':v': item['version'],
+          ':t': ctx.access.tenantId,
+        },
+      },
+    },
+    {
+      Put: {
+        TableName: tableName(),
+        Item: txn,
+        ConditionExpression: 'attribute_not_exists(PK)',
+      },
+    },
+  ];
+  return { nextItem, txn, items };
+}
+
+export async function loadInputItem(ctx: TenantContext, itemId: string) {
+  return loadItem(ctx, itemId);
+}
+
 export const recordInputMovement = tenantOperation({
   name: 'recordInputMovement',
   entitlement: 'input.manage',
@@ -279,58 +352,17 @@ export const recordInputMovement = tenantOperation({
       input.transactionType === 'ADJUSTMENT' && input.decrease
         ? -input.quantity
         : input.quantity;
-    let next: number;
-    try {
-      next = applyInputTxn(Number(item['quantity'] ?? 0), {
-        type: input.transactionType,
-        quantity: signed,
-      });
-    } catch (e) {
-      if (e instanceof InputStockError)
-        throw new ApiError(
-          'VALIDATION',
-          `quantity: only ${e.available} ${String(item['unit']).toLowerCase()} in stock`
-        );
-      throw e;
-    }
-    const nextItem: Item = {
-      ...item,
-      quantity: next,
-      version: Number(item['version']) + 1,
-      updatedAt: ctx.now,
-      updatedBy: ctx.userId,
-    };
-    const txn = txnItem(ctx, item, txnId, {
+    const { nextItem, txn, items } = inputMovementWrites(ctx, item, txnId, {
       type: input.transactionType,
       quantity: signed,
       date: input.transactionDate,
       reason: input.reason,
       notes: input.notes,
-      balanceAfter: next,
     });
     try {
       await ddb.send(
         new TransactWriteCommand({
-          TransactItems: [
-            {
-              Put: {
-                TableName: tableName(),
-                Item: nextItem,
-                ConditionExpression: 'version = :v AND tenantId = :t',
-                ExpressionAttributeValues: {
-                  ':v': item['version'],
-                  ':t': tenantId,
-                },
-              },
-            },
-            {
-              Put: {
-                TableName: tableName(),
-                Item: txn,
-                ConditionExpression: 'attribute_not_exists(PK)',
-              },
-            },
-          ],
+          TransactItems: items,
         })
       );
     } catch (e) {

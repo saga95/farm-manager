@@ -176,6 +176,24 @@ export const keys: KeyBuilders = {
     GSI1SK: `SALE${SEP}${assertId('saleDate', saleDate)}${SEP}${assertId('saleId', saleId)}`,
   }),
 
+  /** Production cycle (§6.3) within a farm. */
+  cycle: (tenantId: string, farmId: string, cycleId: string): Key => ({
+    PK: keys.farmPk(tenantId, farmId),
+    SK: `CYCLE${SEP}${assertId('cycleId', cycleId)}`,
+  }),
+  /** Activities of one target (cycle, space or zone), by date (§41.4). */
+  activityPk: (tenantId: string, targetId: string): string =>
+    `${t(tenantId)}${SEP}ACT${SEP}${assertId('targetId', targetId)}`,
+  activity: (
+    tenantId: string,
+    targetId: string,
+    activityDate: string,
+    activityId: string
+  ): Key => ({
+    PK: keys.activityPk(tenantId, targetId),
+    SK: `A${SEP}${assertId('activityDate', activityDate)}${SEP}${assertId('activityId', activityId)}`,
+  }),
+
   /** Farm-input item (§12) within a farm. */
   inputItem: (tenantId: string, farmId: string, itemId: string): Key => ({
     PK: keys.farmPk(tenantId, farmId),
@@ -229,6 +247,7 @@ export const keys: KeyBuilders = {
     inputs: 'INPUT#',
     buyers: 'BUYER#',
     sales: 'SALE#',
+    cycles: 'CYCLE#',
   },
   tenantPk: t,
 };
@@ -293,6 +312,14 @@ interface KeyBuilders {
     harvestDate: string,
     harvestId: string
   ) => Key;
+  cycle: (tenantId: string, farmId: string, cycleId: string) => Key;
+  activityPk: (tenantId: string, targetId: string) => string;
+  activity: (
+    tenantId: string,
+    targetId: string,
+    activityDate: string,
+    activityId: string
+  ) => Key;
   buyer: (tenantId: string, buyerId: string) => Key;
   sale: (
     tenantId: string,
@@ -337,7 +364,8 @@ interface KeyBuilders {
       | 'media'
       | 'inputs'
       | 'buyers'
-      | 'sales',
+      | 'sales'
+      | 'cycles',
       string
     >
   >;

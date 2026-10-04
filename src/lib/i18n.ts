@@ -8,6 +8,7 @@ import enCommon from '../../public/locales/en/common.json';
 import enDashboard from '../../public/locales/en/dashboard.json';
 import enFarm from '../../public/locales/en/farm.json';
 import enForms from '../../public/locales/en/forms.json';
+import enGrowing from '../../public/locales/en/growing.json';
 import enInventory from '../../public/locales/en/inventory.json';
 import enNavigation from '../../public/locales/en/navigation.json';
 import enPlucking from '../../public/locales/en/plucking.json';
@@ -37,6 +38,7 @@ export const NAMESPACES = [
   'media',
   'inventory',
   'sales',
+  'growing',
 ] as const;
 
 const resources = {
@@ -55,6 +57,7 @@ const resources = {
     media: enMedia,
     inventory: enInventory,
     sales: enSales,
+    growing: enGrowing,
   },
 };
 
