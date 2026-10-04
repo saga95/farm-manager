@@ -82,6 +82,41 @@ export const keys: KeyBuilders = {
     GSI1SK: `TREE${SEP}${assertId('code', code)}`,
   }),
 
+  /** Plucking round within a farm, sorted by date (ADR-0002). */
+  round: (
+    tenantId: string,
+    farmId: string,
+    roundDate: string,
+    roundId: string
+  ): Key => ({
+    PK: keys.farmPk(tenantId, farmId),
+    SK: `ROUND${SEP}${assertId('roundDate', roundDate)}${SEP}${assertId('roundId', roundId)}`,
+  }),
+  /** Partition for a round's per-tree slots (one tree once per round, §8.2). */
+  roundPk: (tenantId: string, roundId: string): string =>
+    `${t(tenantId)}${SEP}R${SEP}${assertId('roundId', roundId)}`,
+  roundSlot: (tenantId: string, roundId: string, treeId: string): Key => ({
+    PK: keys.roundPk(tenantId, roundId),
+    SK: `SLOT${SEP}${assertId('treeId', treeId)}`,
+  }),
+  /** A tree's harvest timeline partition. */
+  treePk: (tenantId: string, treeId: string): string =>
+    `${t(tenantId)}${SEP}TREE${SEP}${assertId('treeId', treeId)}`,
+  harvest: (
+    tenantId: string,
+    treeId: string,
+    harvestDate: string,
+    harvestId: string
+  ): Key => ({
+    PK: keys.treePk(tenantId, treeId),
+    SK: `H${SEP}${assertId('harvestDate', harvestDate)}${SEP}${assertId('harvestId', harvestId)}`,
+  }),
+  /** GSI1: harvests in a round, by tree code. */
+  harvestByRound: (tenantId: string, roundId: string, treeCode: string) => ({
+    GSI1PK: keys.roundPk(tenantId, roundId),
+    GSI1SK: `H${SEP}${assertId('treeCode', treeCode)}`,
+  }),
+
   /** GSI2: get any entity by id; results MUST be tenant-checked. */
   byId: (id: string) => ({ GSI2PK: `ID${SEP}${assertId('id', id)}` }),
 
@@ -103,6 +138,7 @@ export const keys: KeyBuilders = {
     zones: 'ZONE#',
     spaces: 'SPACE#',
     trees: 'TREE#',
+    rounds: 'ROUND#',
   },
   tenantPk: t,
 };
@@ -128,6 +164,26 @@ interface KeyBuilders {
     status: string,
     code: string
   ) => { GSI1PK: string; GSI1SK: string };
+  round: (
+    tenantId: string,
+    farmId: string,
+    roundDate: string,
+    roundId: string
+  ) => Key;
+  roundPk: (tenantId: string, roundId: string) => string;
+  roundSlot: (tenantId: string, roundId: string, treeId: string) => Key;
+  treePk: (tenantId: string, treeId: string) => string;
+  harvest: (
+    tenantId: string,
+    treeId: string,
+    harvestDate: string,
+    harvestId: string
+  ) => Key;
+  harvestByRound: (
+    tenantId: string,
+    roundId: string,
+    treeCode: string
+  ) => { GSI1PK: string; GSI1SK: string };
   byId: (id: string) => { GSI2PK: string };
   audit: (
     tenantId: string,
@@ -137,7 +193,14 @@ interface KeyBuilders {
   ) => Key;
   prefix: Readonly<
     Record<
-      'members' | 'roles' | 'profiles' | 'farms' | 'zones' | 'spaces' | 'trees',
+      | 'members'
+      | 'roles'
+      | 'profiles'
+      | 'farms'
+      | 'zones'
+      | 'spaces'
+      | 'trees'
+      | 'rounds',
       string
     >
   >;

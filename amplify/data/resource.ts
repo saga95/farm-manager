@@ -138,6 +138,48 @@ const schema = a.schema({
     skipped: a.string().required().array().required(),
   }),
 
+  PluckingRound: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    farmId: a.id().required(),
+    roundDate: a.string().required(),
+    plannedTreeIds: a.id().required().array().required(),
+    skippedTreeIds: a.id().required().array().required(),
+    status: a.string().required(),
+    pluckerName: a.string(),
+    notes: a.string(),
+    totalNuts: a.integer(),
+    completedAt: a.string(),
+    version: a.integer().required(),
+    createdAt: a.string(),
+    updatedAt: a.string(),
+  }),
+
+  TreeHarvest: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    farmId: a.id().required(),
+    roundId: a.id(),
+    treeId: a.id().required(),
+    treeCode: a.string().required(),
+    harvestDate: a.string().required(),
+    quantity: a.integer(),
+    quantityUnit: a.string().required(),
+    recordQuality: a.string().required(),
+    excludeFromPrediction: a.boolean().required(),
+    notes: a.string(),
+    photoIds: a.id().required().array(),
+    source: a.string().required(),
+    version: a.integer().required(),
+    createdAt: a.string(),
+    updatedAt: a.string(),
+  }),
+
+  PluckingRoundDetail: a.customType({
+    round: a.ref('PluckingRound').required(),
+    harvests: a.ref('TreeHarvest').required().array().required(),
+  }),
+
   CreateTenantResult: a.customType({
     tenantId: a.id().required(),
     farmId: a.id().required(),
@@ -334,6 +376,73 @@ const schema = a.schema({
       zoneId: a.id(),
     })
     .returns(a.ref('BulkCreateTreesResult').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  // ─── Plucking rounds (#51–#54) ────────────────────────────────────────────
+  createPluckingRound: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      roundId: a.id().required(),
+      roundDate: a.string().required(),
+      plannedTreeIds: a.id().required().array().required(),
+      pluckerName: a.string(),
+      notes: a.string(),
+    })
+    .returns(a.ref('PluckingRound').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  listPluckingRounds: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      limit: a.integer(),
+    })
+    .returns(a.ref('PluckingRound').required().array().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  getPluckingRound: a
+    .query()
+    .arguments({ tenantId: a.id().required(), roundId: a.id().required() })
+    .returns(a.ref('PluckingRoundDetail').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  updateRoundPlan: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      roundId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      addTreeIds: a.id().required().array(),
+      removeTreeIds: a.id().required().array(),
+      skipTreeIds: a.id().required().array(),
+      unskipTreeIds: a.id().required().array(),
+      pluckerName: a.string(),
+      notes: a.string(),
+    })
+    .returns(a.ref('PluckingRound').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  recordTreeHarvest: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      roundId: a.id().required(),
+      treeId: a.id().required(),
+      harvestId: a.id().required(),
+      quantity: a.integer().required(),
+      recordQuality: a.string(),
+      notes: a.string(),
+      excludeFromPrediction: a.boolean(),
+    })
+    .returns(a.ref('TreeHarvest').required())
     .authorization(allow => [allow.authenticated()])
     .handler(a.handler.function(farmApi)),
 });
