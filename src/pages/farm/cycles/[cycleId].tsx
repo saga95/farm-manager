@@ -12,19 +12,26 @@ import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import AgricultureOutlined from '@mui/icons-material/AgricultureOutlined';
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined';
 import EventNoteOutlined from '@mui/icons-material/EventNoteOutlined';
 import { AppPage } from '@/components/AppPage';
 import { EmptyState } from '@/components/ui/EmptyState/EmptyState';
 import { StatTile } from '@/components/ui/StatTile/StatTile';
 import { SummaryCard } from '@/components/ui/SummaryCard/SummaryCard';
-import { type CycleStatus, nextCycleStatuses } from '@/domain/cycles';
+import {
+  type CycleStatus,
+  type HarvestUnit,
+  nextCycleStatuses,
+} from '@/domain/cycles';
 import { useCurrentFarm, useSpaces, useZones } from '@/features/farm/hooks';
 import { useInputItems } from '@/features/inventory/inputHooks';
 import { EntityPhotos } from '@/features/media/components/EntityPhotos';
 import { todayIso } from '@/features/plucking/hooks';
 import { ActivityDialog } from '@/features/polytunnel/components/ActivityDialog';
 import { CycleDialog } from '@/features/polytunnel/components/CycleDialog';
+import { HarvestDialog } from '@/features/polytunnel/components/HarvestDialog';
 import { useCycle, useCycleActions } from '@/features/polytunnel/hooks';
 import { useTenant } from '@/features/tenant';
 import { ApiError } from '@/lib/api';
@@ -45,8 +52,10 @@ export default function CyclePage() {
   const spaces = useSpaces();
   const inputs = useInputItems();
   const { can } = useTenant();
-  const { update, record, removeActivity } = useCycleActions();
+  const { update, record, removeActivity, harvest } = useCycleActions();
   const [recording, setRecording] = useState(false);
+  const [harvesting, setHarvesting] = useState(false);
+  const [harvestId, setHarvestId] = useState('');
   const [activityId, setActivityId] = useState('');
   const [editing, setEditing] = useState(false);
   const [confirm, setConfirm] = useState<CycleStatus | null>(null);
@@ -54,6 +63,13 @@ export default function CyclePage() {
 
   const c = detail.data?.cycle;
   const activities = detail.data?.activities ?? [];
+  const harvests = detail.data?.harvests ?? [];
+  const rawTotals = detail.data?.cycle.harvestTotals;
+  const totals = Object.entries(
+    (typeof rawTotals === 'string'
+      ? (JSON.parse(rawTotals) as Record<string, number>)
+      : rawTotals) ?? {}
+  );
   const today = todayIso(farm?.timezone);
   const fmt = (iso?: string | null) =>
     iso
@@ -156,19 +172,90 @@ export default function CyclePage() {
             </Alert>
           )}
 
-          {can('activity.record') && c.status !== 'CANCELLED' && (
-            <Button
-              variant='contained'
-              size='large'
-              onClick={() => {
-                setActivityId(ulid()); // stable per dialog: a retried save replays
-                setError(null);
-                setRecording(true);
-              }}
-            >
-              {t('cycle.record')}
-            </Button>
+          {c.status !== 'CANCELLED' && (
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+              {can('harvest.record') && (
+                <Button
+                  variant='contained'
+                  size='large'
+                  onClick={() => {
+                    setHarvestId(ulid()); // stable per dialog: a retried save replays
+                    setError(null);
+                    setHarvesting(true);
+                  }}
+                >
+                  {t('cycle.harvest')}
+                </Button>
+              )}
+              {can('activity.record') && (
+                <Button
+                  variant='outlined'
+                  size='large'
+                  onClick={() => {
+                    setActivityId(ulid()); // stable per dialog: a retried save replays
+                    setError(null);
+                    setRecording(true);
+                  }}
+                >
+                  {t('cycle.record')}
+                </Button>
+              )}
+            </Stack>
           )}
+
+          <SummaryCard
+            title={t('cycle.harvests')}
+            icon={<AgricultureOutlined fontSize='small' />}
+            tone='secondary'
+          >
+            {harvests.length === 0 ? (
+              <EmptyState message={t('cycle.noHarvest')} />
+            ) : (
+              <Stack spacing={1}>
+                {totals.length > 0 && (
+                  <Typography>
+                    {t('cycle.harvested')}:{' '}
+                    <strong>
+                      {totals
+                        .map(([u, q]) => `${q} ${unitName(u)}`)
+                        .join(' · ')}
+                    </strong>
+                  </Typography>
+                )}
+                <List disablePadding aria-label={t('cycle.harvests')}>
+                  {harvests.map((h, i) => (
+                    <ListItem
+                      key={h.id}
+                      divider={i < harvests.length - 1}
+                      disableGutters
+                    >
+                      <ListItemText
+                        primary={`${fmt(h.harvestDate)} · ${t(
+                          'cycle.harvestLine',
+                          {
+                            quantity: h.quantity,
+                            unit: unitName(h.unit),
+                          }
+                        )}`}
+                        secondary={
+                          [h.qualityNote, h.notes]
+                            .filter(Boolean)
+                            .join(' · ') || undefined
+                        }
+                      />
+                      <Button
+                        component={NextLink}
+                        href={`/inventory/produce/${h.batchId}`}
+                        size='small'
+                      >
+                        {t('cycle.toStock')}
+                      </Button>
+                    </ListItem>
+                  ))}
+                </List>
+              </Stack>
+            )}
+          </SummaryCard>
 
           <SummaryCard
             title={t('cycle.timeline')}
@@ -283,6 +370,23 @@ export default function CyclePage() {
             </Stack>
           )}
         </Stack>
+      )}
+      {c && (
+        <HarvestDialog
+          open={harvesting}
+          cropName={c.cropName}
+          today={today}
+          defaultUnit={(harvests[0]?.unit as HarvestUnit | undefined) ?? 'KG'}
+          saving={harvest.isLoading}
+          error={error}
+          onClose={() => setHarvesting(false)}
+          onSave={v =>
+            void harvest
+              .mutateAsync({ cycleId: c.id, harvestId, ...v })
+              .then(() => setHarvesting(false))
+              .catch(fail)
+          }
+        />
       )}
       {c && (
         <ActivityDialog

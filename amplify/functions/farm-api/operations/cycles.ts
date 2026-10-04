@@ -16,15 +16,21 @@ import {
   TransactWriteCommand,
   type TransactWriteCommandInput,
 } from '@aws-sdk/lib-dynamodb';
+import { ulid } from 'ulid';
 import { z } from 'zod';
 import {
   ACTIVITY_TYPES,
   type CycleStatus,
+  HARVEST_UNITS,
+  type HarvestUnit,
+  addHarvestTotal,
   canMoveCycle,
   cropCodeOf,
   isOpenCycle,
+  isValidHarvestQuantity,
 } from '../../../../src/domain/cycles';
 import { AREA_UNITS } from '../../../../src/domain/farm';
+import { txnIds } from '../../../../src/domain/inventory';
 import { isUlid, keys } from '../../../../src/domain/keys';
 import {
   type Item,
@@ -257,12 +263,20 @@ export const getCycle = tenantOperation({
   input: z.object({ tenantId: z.string().min(1), cycleId: id }),
   handler: async (input, ctx) => {
     const cycle = await loadCycle(ctx, input.cycleId);
-    const activities = await queryPrefix(
-      keys.activityPk(ctx.access.tenantId, input.cycleId),
-      'A#'
-    );
+    const [activities, harvests] = await Promise.all([
+      queryPrefix(keys.activityPk(ctx.access.tenantId, input.cycleId), 'A#'),
+      queryPrefix(
+        keys.cycleHarvestPk(ctx.access.tenantId, input.cycleId),
+        'H#'
+      ),
+    ]);
     return {
       cycle: toView(cycle),
+      // AC-PC-003: many harvests per cycle, newest first
+      harvests: harvests
+        .filter(h => !h['deletedAt'])
+        .sort((a, b) => String(b['SK']).localeCompare(String(a['SK'])))
+        .map(h => toView(h)),
       // AC-MA-002: chronological history, newest first
       activities: activities
         .filter(a => !a['deletedAt'])
@@ -461,5 +475,184 @@ export const archiveActivity = tenantOperation({
       action: 'activity.archive',
     });
     return toView(item);
+  },
+});
+
+// ─── Harvests → produce stock (#95, §14.2, AC-PT-003/004, AC-PC-003) ──────────
+
+export const recordCycleHarvest = tenantOperation({
+  name: 'recordCycleHarvest',
+  entitlement: 'harvest.record',
+  input: z.object({
+    tenantId: z.string().min(1),
+    cycleId: id,
+    harvestId: id,
+    harvestDate: isoDate,
+    quantity: z.number().positive().max(1_000_000),
+    unit: z.enum(HARVEST_UNITS),
+    qualityNote: text(500),
+    notes: text(1000),
+  }),
+  handler: async (input, ctx) => {
+    const { tenantId } = ctx.access;
+    if (!isValidHarvestQuantity(input.quantity, input.unit))
+      throw new ApiError(
+        'VALIDATION',
+        input.unit === 'COUNT'
+          ? 'quantity: whole items only'
+          : 'quantity: at most 3 decimals'
+      );
+    const cycle = await loadCycle(ctx, input.cycleId);
+    if (cycle['status'] === 'CANCELLED')
+      throw new ApiError('VALIDATION', 'cycle: this cycle was cancelled');
+    const key = keys.cycleHarvest(
+      tenantId,
+      input.cycleId,
+      input.harvestDate,
+      input.harvestId
+    );
+    const existing = await getItem(key);
+    if (existing) {
+      if (existing['createdBy'] === ctx.userId) return toView(existing); // retry
+      throw new ApiError('CONFLICT', 'Id already in use');
+    }
+
+    const farmId = String(cycle['farmId']);
+    const cropCode = String(cycle['cropCode']);
+    const batchId = ulid(); // one batch per harvest; the harvest keeps its id
+    const txnId = txnIds.genericHarvestIn(input.harvestId);
+    const harvest: Item = {
+      ...key,
+      ...keys.byId(input.harvestId),
+      GSI2SK: 'GENERICHARVEST',
+      entityType: 'GenericHarvest',
+      id: input.harvestId,
+      tenantId,
+      farmId,
+      zoneId: cycle['zoneId'],
+      productionCycleId: input.cycleId,
+      growingSpaceId: cycle['growingSpaceId'],
+      cropCode,
+      cropName: cycle['cropName'],
+      harvestDate: input.harvestDate,
+      quantity: input.quantity,
+      unit: input.unit,
+      qualityNote: input.qualityNote ?? undefined,
+      notes: input.notes ?? undefined,
+      batchId,
+      version: 1,
+      createdAt: ctx.now,
+      createdBy: ctx.userId,
+      updatedAt: ctx.now,
+      updatedBy: ctx.userId,
+    };
+    const batch: Item = {
+      ...keys.produceBatch(
+        tenantId,
+        farmId,
+        cropCode,
+        input.harvestDate,
+        batchId
+      ),
+      ...keys.byId(batchId),
+      GSI2SK: 'PRODUCEBATCH',
+      entityType: 'ProduceBatch',
+      id: batchId,
+      tenantId,
+      farmId,
+      cropCode,
+      cropName: cycle['cropName'],
+      sourceType: 'GENERIC_HARVEST',
+      sourceId: input.harvestId,
+      productionCycleId: input.cycleId,
+      batchDate: input.harvestDate,
+      quantityReceived: input.quantity,
+      unit: input.unit,
+      available: input.quantity,
+      availableByState: { FRESH: input.quantity },
+      status: 'AVAILABLE',
+      version: 1,
+      createdAt: ctx.now,
+      createdBy: ctx.userId,
+    };
+    const next = String(cycle['status']);
+    const totals = addHarvestTotal(
+      (cycle['harvestTotals'] as Partial<Record<HarvestUnit, number>>) ?? {},
+      input.unit,
+      input.quantity
+    );
+    const items: NonNullable<TransactWriteCommandInput['TransactItems']> = [
+      {
+        Put: {
+          TableName: tableName(),
+          Item: Object.fromEntries(
+            Object.entries(harvest).filter(([, v]) => v !== undefined)
+          ),
+          ConditionExpression: 'attribute_not_exists(PK)',
+        },
+      },
+      {
+        Put: {
+          TableName: tableName(),
+          Item: batch,
+          ConditionExpression: 'attribute_not_exists(PK)',
+        },
+      },
+      {
+        Put: {
+          TableName: tableName(),
+          Item: {
+            ...keys.produceTxn(tenantId, batchId, input.harvestDate, txnId),
+            entityType: 'ProduceInventoryTxn',
+            id: txnId,
+            tenantId,
+            farmId,
+            batchId,
+            transactionType: 'HARVEST_IN',
+            quantity: input.quantity,
+            unit: input.unit,
+            state: 'FRESH',
+            transactionDate: input.harvestDate,
+            sourceId: input.harvestId,
+            createdAt: ctx.now,
+            createdBy: ctx.userId,
+          },
+          ConditionExpression: 'attribute_not_exists(PK)',
+        },
+      },
+      {
+        Put: {
+          TableName: tableName(),
+          Item: {
+            ...cycle,
+            // First harvest moves a growing cycle to Harvesting
+            status:
+              next === 'PLANNED' || next === 'ACTIVE' ? 'HARVESTING' : next,
+            harvestCount: Number(cycle['harvestCount'] ?? 0) + 1,
+            harvestTotals: totals,
+            lastHarvestAt:
+              input.harvestDate > String(cycle['lastHarvestAt'] ?? '')
+                ? input.harvestDate
+                : cycle['lastHarvestAt'],
+            version: Number(cycle['version']) + 1,
+            updatedAt: ctx.now,
+          },
+          ConditionExpression: 'version = :v AND tenantId = :t',
+          ExpressionAttributeValues: { ':v': cycle['version'], ':t': tenantId },
+        },
+      },
+    ];
+    try {
+      await ddb.send(new TransactWriteCommand({ TransactItems: items }));
+    } catch (e) {
+      if (!(e instanceof TransactionCanceledException)) throw e;
+      const again = await getItem(key);
+      if (again && again['createdBy'] === ctx.userId) return toView(again);
+      throw new ApiError(
+        'CONFLICT',
+        'The cycle changed meanwhile; please try again'
+      );
+    }
+    return toView(harvest);
   },
 });

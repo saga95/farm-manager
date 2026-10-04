@@ -4,6 +4,11 @@
  */
 
 import { generateClient } from 'aws-amplify/data';
+import {
+  type ProduceState,
+  type StockByState,
+  stockOf,
+} from '@/domain/inventory';
 
 export type ApiErrorCode =
   | 'UNAUTHENTICATED'
@@ -560,19 +565,21 @@ export const listDueTrees = async (
   ) as DueTree[]),
 ];
 
-export type ProduceState = 'HUSKED' | 'DEHUSKED';
+export type { ProduceState, StockByState } from '@/domain/inventory';
 
 export interface ProduceBatch {
   id: string;
   cropCode: string;
+  /** Free-text crop name for non-coconut produce (e.g. "Cucumber") */
+  cropName?: string | null;
   sourceType: string;
   sourceId?: string | null;
   batchDate: string;
   quantityReceived: number;
   unit: string;
   available: number;
-  /** Parsed from AWSJSON; always has both states */
-  availableByState: Record<ProduceState, number>;
+  /** Parsed from AWSJSON; every state of the batch's crop is present */
+  availableByState: StockByState;
   status: string;
   version: number;
 }
@@ -595,24 +602,22 @@ export interface ProduceTxn {
 }
 
 type RawBatch = Omit<ProduceBatch, 'availableByState'> & {
-  availableByState?: string | Partial<Record<ProduceState, number>> | null;
+  availableByState?: string | StockByState | null;
 };
 
 /** AWSJSON arrives as a string; normalise to numbers for both states. */
 function toBatch(raw: RawBatch): ProduceBatch {
   const parsed =
     typeof raw.availableByState === 'string'
-      ? (JSON.parse(raw.availableByState) as Partial<
-          Record<ProduceState, number>
-        >)
-      : (raw.availableByState ?? {});
-  return {
-    ...raw,
-    availableByState: {
-      HUSKED: parsed.HUSKED ?? (raw.availableByState ? 0 : raw.available),
-      DEHUSKED: parsed.DEHUSKED ?? 0,
-    },
-  };
+      ? (JSON.parse(raw.availableByState) as StockByState)
+      : raw.availableByState;
+  // Very old coconut batches had no per-state balance: all husked
+  const stored =
+    parsed ??
+    (raw.cropCode === 'COCONUT'
+      ? { HUSKED: raw.available }
+      : { FRESH: raw.available });
+  return { ...raw, availableByState: stockOf(raw.cropCode, stored) };
 }
 
 export const listProduceBatches = async (
@@ -1062,6 +1067,10 @@ export interface SaleAllocation {
 export interface Sale {
   id: string;
   farmId: string;
+  /** COCONUT or a polytunnel crop code (#96) */
+  cropCode?: string | null;
+  /** NUT, KG, G or COUNT */
+  quantityUnit?: string | null;
   saleDate: string;
   buyerId?: string | null;
   buyerName?: string | null;
@@ -1197,6 +1206,8 @@ export interface ProductionCycle {
   harvestCount?: number | null;
   lastActivityAt?: string | null;
   lastHarvestAt?: string | null;
+  /** AWSJSON running totals per unit, e.g. { KG: 37.5 } */
+  harvestTotals?: string | Record<string, number> | null;
   version: number;
 }
 
@@ -1243,8 +1254,13 @@ export const getCycle = async (tenantId: string, cycleId: string) => {
   const d = unwrap(await q('getCycle')({ tenantId, cycleId })) as {
     cycle: ProductionCycle;
     activities: FarmActivity[];
+    harvests?: CycleHarvest[];
   };
-  return { cycle: d.cycle, activities: [...d.activities] };
+  return {
+    cycle: d.cycle,
+    activities: [...d.activities],
+    harvests: [...(d.harvests ?? [])],
+  };
 };
 
 export const createCycle = async (
@@ -1289,3 +1305,35 @@ export const archiveActivity = async (tenantId: string, a: FarmActivity) =>
       expectedVersion: a.version,
     })
   ) as FarmActivity;
+
+// ─── Polytunnel harvests (#95) ──────────────────────────────────────────────
+
+export interface CycleHarvest {
+  id: string;
+  productionCycleId: string;
+  cropCode: string;
+  cropName?: string | null;
+  harvestDate: string;
+  quantity: number;
+  unit: string;
+  qualityNote?: string | null;
+  notes?: string | null;
+  batchId: string;
+  version: number;
+}
+
+export const recordCycleHarvest = async (
+  tenantId: string,
+  input: {
+    cycleId: string;
+    harvestId: string;
+    harvestDate: string;
+    quantity: number;
+    unit: string;
+    qualityNote: string | null;
+    notes: string | null;
+  }
+) =>
+  unwrap(
+    await mu('recordCycleHarvest')({ tenantId, ...input })
+  ) as CycleHarvest;

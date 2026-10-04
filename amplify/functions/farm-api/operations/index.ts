@@ -21,6 +21,7 @@ import {
   listActivities,
   listCycles,
   recordActivity,
+  recordCycleHarvest,
   updateCycle,
 } from './cycles';
 import { createTenant } from './createTenant';
@@ -125,6 +126,7 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       recordActivity,
       listActivities,
       archiveActivity,
+      recordCycleHarvest,
       getTreeHistory,
       listDueTrees,
       recordCoconutSample,

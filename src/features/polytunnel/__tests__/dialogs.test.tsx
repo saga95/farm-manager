@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { InputItem, Zone } from '@/lib/api';
 import { ActivityDialog } from '../components/ActivityDialog';
 import { CycleDialog } from '../components/CycleDialog';
+import { HarvestDialog } from '../components/HarvestDialog';
 
 jest.mock('@mui/material/useMediaQuery', () => () => false);
 
@@ -150,5 +151,55 @@ describe('ActivityDialog (#94, AC-MA-001)', () => {
         materialName: null,
       })
     );
+  });
+});
+
+describe('HarvestDialog (#95, AC-PT-003)', () => {
+  it('records 12.5 kg', () => {
+    const onSave = jest.fn();
+    render(
+      <HarvestDialog
+        open
+        cropName='Cucumber'
+        today='2026-04-10'
+        saving={false}
+        onSave={onSave}
+        onClose={jest.fn()}
+      />
+    );
+    fireEvent.change(screen.getByLabelText(/harvestDialog.quantity/), {
+      target: { value: '12.5' },
+    });
+    save('harvestDialog.save');
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        quantity: 12.5,
+        unit: 'KG',
+        harvestDate: '2026-04-10',
+        qualityNote: null,
+      })
+    );
+  });
+
+  it('pieces are typed as whole numbers; zero is refused', () => {
+    const onSave = jest.fn();
+    render(
+      <HarvestDialog
+        open
+        cropName='Cucumber'
+        today='2026-04-10'
+        defaultUnit='COUNT'
+        saving={false}
+        onSave={onSave}
+        onClose={jest.fn()}
+      />
+    );
+    const field = screen.getByLabelText(/harvestDialog.quantity/);
+    fireEvent.change(field, { target: { value: '12.5' } });
+    expect(field).toHaveValue('125');
+    fireEvent.change(field, { target: { value: '0' } });
+    save('harvestDialog.save');
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText('harvestDialog.invalid')).toBeInTheDocument();
   });
 });

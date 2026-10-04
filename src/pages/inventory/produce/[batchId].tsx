@@ -50,6 +50,10 @@ export default function ProduceBatchPage() {
       new Date(`${iso}T00:00:00`)
     );
   const usable = batch && batch.status !== 'VOID';
+  const isCoconut = batch?.cropCode === 'COCONUT';
+  const unitLabel = batch
+    ? t(`units.${batch.unit}`, { defaultValue: batch.unit })
+    : '';
 
   const open = (a: StockAction) => {
     setError(null);
@@ -90,7 +94,12 @@ export default function ProduceBatchPage() {
     <AppPage
       title={
         batch
-          ? t('batch.title', { date: fmt(batch.batchDate) })
+          ? isCoconut
+            ? t('batch.title', { date: fmt(batch.batchDate) })
+            : t('batch.cropTitle', {
+                crop: batch.cropName ?? batch.cropCode,
+                date: fmt(batch.batchDate),
+              })
           : t('produce.title')
       }
       showQuickActions={false}
@@ -118,34 +127,38 @@ export default function ProduceBatchPage() {
               gap: 1.5,
             }}
           >
-            <StatTile
-              label={t('produce.husked')}
-              value={batch.availableByState.HUSKED}
-              unit={t('produce.nuts')}
-            />
-            <StatTile
-              label={t('produce.dehusked')}
-              value={batch.availableByState.DEHUSKED}
-              unit={t('produce.nuts')}
-            />
+            {isCoconut && (
+              <>
+                <StatTile
+                  label={t('produce.husked')}
+                  value={batch.availableByState.HUSKED ?? 0}
+                  unit={unitLabel}
+                />
+                <StatTile
+                  label={t('produce.dehusked')}
+                  value={batch.availableByState.DEHUSKED ?? 0}
+                  unit={unitLabel}
+                />
+              </>
+            )}
             <StatTile
               label={t('produce.total')}
               value={batch.available}
-              unit={t('produce.nuts')}
+              unit={unitLabel}
             />
             <StatTile
               label={t('batch.received')}
               value={batch.quantityReceived}
-              unit={t('produce.nuts')}
+              unit={unitLabel}
             />
           </Box>
           {usable && (
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-              {can('inventory.dehusk') && (
+              {isCoconut && can('inventory.dehusk') && (
                 <Button
                   variant='contained'
                   size='large'
-                  disabled={batch.availableByState.HUSKED === 0}
+                  disabled={(batch.availableByState.HUSKED ?? 0) === 0}
                   onClick={() => open('dehusk')}
                 >
                   {t('batch.dehusk')}
@@ -173,6 +186,7 @@ export default function ProduceBatchPage() {
                 <MovementList
                   transactions={transactions}
                   label={t('batch.history')}
+                  unit={batch.unit}
                 />
               </Card>
             )}
@@ -193,6 +207,7 @@ export default function ProduceBatchPage() {
           open={action !== null}
           action={action ?? 'move'}
           available={batch.availableByState}
+          unit={batch.unit}
           today={todayIso(farm?.timezone)}
           saving={move.isLoading || dehusk.isLoading}
           error={error}

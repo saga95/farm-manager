@@ -16,7 +16,11 @@ import { TransactionCanceledException } from '@aws-sdk/client-dynamodb';
 import { QueryCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { ulid } from 'ulid';
 import { z } from 'zod';
-import { PRODUCE_STATES, txnIds } from '../../../../src/domain/inventory';
+import {
+  PRODUCE_STATES,
+  roundQty,
+  txnIds,
+} from '../../../../src/domain/inventory';
 import { isUlid, keys } from '../../../../src/domain/keys';
 import {
   type Allocation,
@@ -39,13 +43,21 @@ const money = z.number().min(0).max(100_000_000);
 
 const lineSchema = z.object({
   sizeClass: z.enum(SIZE_CLASSES).nullish(),
-  quantity: z.number().int().positive().max(100_000),
+  quantity: z
+    .number()
+    .positive()
+    .max(100_000)
+    .refine(n => roundQty(n) === n, 'at most 3 decimals'),
   unitPrice: money,
 });
 const allocationSchema = z.object({
   batchId: id,
   state: z.enum(PRODUCE_STATES),
-  quantity: z.number().int().positive().max(100_000),
+  quantity: z
+    .number()
+    .positive()
+    .max(100_000)
+    .refine(n => roundQty(n) === n, 'at most 3 decimals'),
 });
 /** AWSJSON arguments may arrive as a JSON string or already parsed. */
 const parseJson = (v: unknown): unknown => {
@@ -128,6 +140,33 @@ function amounts(lines: z.infer<typeof lineSchema>[], actual?: number | null) {
   };
 }
 
+/**
+ * A sale is for one crop (§14.1, AC-PT-005): every allocated batch must be the
+ * same crop and unit. Coconut keeps size lines; other crops have none.
+ */
+async function saleCrop(
+  ctx: TenantContext,
+  allocations: readonly Allocation[]
+) {
+  let crop: { cropCode: string; unit: string } | null = null;
+  for (const id of new Set(allocations.map(a => a.batchId))) {
+    const b = await getById(id, ctx);
+    if (!b || b['entityType'] !== 'ProduceBatch')
+      throw notFound('Stock batch not found');
+    const next = {
+      cropCode: String(b['cropCode'] ?? 'COCONUT'),
+      unit: String(b['unit'] ?? 'NUT'),
+    };
+    if (crop && (crop.cropCode !== next.cropCode || crop.unit !== next.unit))
+      throw new ApiError(
+        'VALIDATION',
+        'allocations: one sale is for one crop and unit'
+      );
+    crop = next;
+  }
+  return crop ?? { cropCode: 'COCONUT', unit: 'NUT' };
+}
+
 async function loadSale(ctx: TenantContext, saleId: string) {
   const s = await getById(saleId, ctx);
   if (!s || s['entityType'] !== 'Sale') throw notFound('Sale not found');
@@ -180,6 +219,11 @@ export const recordSale = tenantOperation({
     }
     const allocations = mergeAllocations(input.allocations);
     checkSale(input.lines, allocations);
+    const crop = await saleCrop(ctx, allocations);
+    const lines =
+      crop.cropCode === 'COCONUT'
+        ? input.lines
+        : input.lines.map(l => ({ ...l, sizeClass: null }));
     const buyer = await buyerSnapshot(ctx, input.buyerId);
     const tenant = await getItem(keys.tenant(tenantId));
 
@@ -201,9 +245,9 @@ export const recordSale = tenantOperation({
       farmId: input.farmId,
       saleDate: input.saleDate,
       ...buyer,
-      cropCode: 'COCONUT',
-      quantityUnit: 'NUT',
-      ...amounts(input.lines, input.actualAmountReceived),
+      cropCode: crop.cropCode,
+      quantityUnit: crop.unit,
+      ...amounts(lines, input.actualAmountReceived),
       allocations,
       differenceReason: input.differenceReason ?? undefined,
       notes: input.notes ?? undefined,
@@ -289,6 +333,13 @@ export const updateSale = tenantOperation({
 
     const allocations = mergeAllocations(input.allocations);
     checkSale(input.lines, allocations);
+    const crop = await saleCrop(ctx, allocations);
+    if (crop.cropCode !== String(sale['cropCode'] ?? 'COCONUT'))
+      throw new ApiError('VALIDATION', "allocations: a sale can't change crop");
+    const lines =
+      crop.cropCode === 'COCONUT'
+        ? input.lines
+        : input.lines.map(l => ({ ...l, sizeClass: null }));
     const buyer = await buyerSnapshot(ctx, input.buyerId);
     const { tenantId } = ctx.access;
     const saleDate = String(sale['saleDate']);
@@ -300,7 +351,7 @@ export const updateSale = tenantOperation({
 
     const next: Item = {
       ...sale,
-      ...amounts(input.lines, input.actualAmountReceived),
+      ...amounts(lines, input.actualAmountReceived),
       allocations,
       buyerId: buyer.buyerId,
       buyerName: buyer.buyerName,

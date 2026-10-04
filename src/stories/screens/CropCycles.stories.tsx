@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { ActivityDialog } from '../../features/polytunnel/components/ActivityDialog';
 import { CycleDialog } from '../../features/polytunnel/components/CycleDialog';
+import { HarvestDialog } from '../../features/polytunnel/components/HarvestDialog';
 import type { InputItem, Zone } from '../../lib/api';
 
 const zones: Zone[] = [
@@ -72,6 +73,19 @@ export const NewCycle: Story = {
       zones={zones}
       spaces={[]}
       today='2026-01-15'
+      saving={false}
+      onSave={() => undefined}
+      onClose={() => undefined}
+    />
+  ),
+};
+
+export const RecordHarvest: Story = {
+  render: () => (
+    <HarvestDialog
+      open
+      cropName='Cucumber'
+      today='2026-04-10'
       saving={false}
       onSave={() => undefined}
       onClose={() => undefined}

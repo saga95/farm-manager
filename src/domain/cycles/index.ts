@@ -103,3 +103,29 @@ export function cropCodeOf(name: string): string {
 export function defaultCycleName(cropName: string, startDate: string): string {
   return `${cropName.trim()} ${startDate.slice(0, 7)}`;
 }
+
+/** Units a polytunnel harvest can be recorded in (§14.2). */
+export const HARVEST_UNITS = ['KG', 'G', 'COUNT'] as const;
+export type HarvestUnit = (typeof HARVEST_UNITS)[number];
+
+/** COUNT is whole items; weights allow up to 3 decimals (12.5 kg). */
+export function isValidHarvestQuantity(
+  quantity: number,
+  unit: HarvestUnit
+): boolean {
+  if (!(quantity > 0) || quantity > 1_000_000) return false;
+  if (unit === 'COUNT') return Number.isInteger(quantity);
+  return Math.round(quantity * 1000) / 1000 === quantity;
+}
+
+/** Running harvest totals per unit on a cycle ({ KG: 37.5, COUNT: 120 }). */
+export function addHarvestTotal(
+  totals: Partial<Record<HarvestUnit, number>>,
+  unit: HarvestUnit,
+  quantity: number
+): Partial<Record<HarvestUnit, number>> {
+  return {
+    ...totals,
+    [unit]: Math.round(((totals[unit] ?? 0) + quantity) * 1000) / 1000,
+  };
+}

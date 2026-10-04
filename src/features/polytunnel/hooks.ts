@@ -11,6 +11,7 @@ import {
   getCycle,
   listCycles,
   recordActivity,
+  recordCycleHarvest,
   updateCycle,
 } from '@/lib/api';
 import { useCurrentFarm } from '@/features/farm/hooks';
@@ -45,6 +46,7 @@ export function useCycleActions() {
         ['cycle', tenantId],
         ['inputs', tenantId],
         ['input', tenantId],
+        ['batches', tenantId],
       ].map(queryKey => qc.invalidateQueries({ queryKey }))
     );
   return {
@@ -64,6 +66,11 @@ export function useCycleActions() {
     }),
     record: useMutation({
       mutationFn: (a: ActivityInput) => recordActivity(tenantId, a),
+      onSuccess: refresh,
+    }),
+    harvest: useMutation({
+      mutationFn: (a: Parameters<typeof recordCycleHarvest>[1]) =>
+        recordCycleHarvest(tenantId, a),
       onSuccess: refresh,
     }),
     removeActivity: useMutation({

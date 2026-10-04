@@ -30,15 +30,16 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import AddOutlined from '@mui/icons-material/AddOutlined';
 import DeleteOutline from '@mui/icons-material/DeleteOutline';
+import {
+  type ProduceState,
+  type StockByState,
+  roundQty,
+  statesFor,
+  stockTotal,
+} from '@/domain/inventory';
 import { autoAllocate, lineAmount, saleTotals } from '@/domain/sales';
 import { SIZE_CLASSES } from '@/domain/samples';
-import type {
-  Buyer,
-  ProduceBatch,
-  ProduceState,
-  Sale,
-  SaleInput,
-} from '@/lib/api';
+import type { Buyer, ProduceBatch, Sale, SaleInput } from '@/lib/api';
 
 interface LineDraft {
   key: number;
@@ -66,9 +67,10 @@ export interface SaleFormProps {
   onCancel: () => void;
 }
 
-const STATES: readonly ProduceState[] = ['HUSKED', 'DEHUSKED'];
 const allocKey = (batchId: string, state: string) => `${batchId}#${state}`;
 const int = (v: string) => (/^\d+$/.test(v) ? Number(v) : NaN);
+/** Amount with at most 3 decimals (kg); NaN otherwise. */
+const qty3 = (v: string) => (/^\d+(\.\d{0,3})?$/.test(v) ? Number(v) : NaN);
 const dec = (v: string) =>
   v.trim() === '' || !/^\d*\.?\d*$/.test(v) ? NaN : Number(v);
 
@@ -101,7 +103,50 @@ export function SaleForm({
       new Date(`${iso}T00:00:00`)
     );
   const stateName = (s: ProduceState) =>
-    ti(s === 'HUSKED' ? 'produce.husked' : 'produce.dehusked');
+    ti(
+      s === 'HUSKED'
+        ? 'produce.husked'
+        : s === 'DEHUSKED'
+          ? 'produce.dehusked'
+          : 'produce.fresh'
+    );
+
+  // A sale is for one crop (#96): coconut by default, or polytunnel produce
+  const crops = useMemo(() => {
+    const map = new Map<
+      string,
+      { cropCode: string; name: string; unit: string }
+    >();
+    for (const b of batches)
+      if (!map.has(b.cropCode))
+        map.set(b.cropCode, {
+          cropCode: b.cropCode,
+          name:
+            b.cropCode === 'COCONUT'
+              ? ti('produce.coconuts')
+              : (b.cropName ?? b.cropCode),
+          unit: b.unit,
+        });
+    return [...map.values()].sort((a, b) =>
+      a.cropCode === 'COCONUT'
+        ? -1
+        : b.cropCode === 'COCONUT'
+          ? 1
+          : a.name.localeCompare(b.name)
+    );
+  }, [batches, ti]);
+  const [cropCode, setCropCode] = useState<string>(
+    () => sale?.cropCode ?? crops[0]?.cropCode ?? 'COCONUT'
+  );
+  const isCoconut = cropCode === 'COCONUT';
+  const unit =
+    crops.find(c => c.cropCode === cropCode)?.unit ??
+    sale?.quantityUnit ??
+    'NUT';
+  const whole = unit === 'NUT' || unit === 'COUNT';
+  const unitLabel = ti(`units.${unit}`, { defaultValue: unit });
+  const parseQty = (v: string) => (whole ? int(v) : qty3(v));
+  const states = statesFor(cropCode);
 
   const [saleDate, setSaleDate] = useState(sale?.saleDate ?? today);
   const [buyerId, setBuyerId] = useState<string>(
@@ -125,7 +170,11 @@ export function SaleForm({
       ])
     )
   );
-  const [fillState, setFillState] = useState<ProduceState>('HUSKED');
+  const [fillState, setFillState] = useState<ProduceState>(
+    () =>
+      statesFor(sale?.cropCode ?? crops[0]?.cropCode ?? 'COCONUT')[0] ??
+      'HUSKED'
+  );
   const [actual, setActual] = useState(
     sale?.actualAmountReceived != null ? String(sale.actualAmountReceived) : ''
   );
@@ -150,26 +199,35 @@ export function SaleForm({
   const stock = useMemo(
     () =>
       batches
+        .filter(b => b.cropCode === cropCode)
         .map(b => ({
           batchId: b.id,
           batchDate: b.batchDate,
-          available: {
-            HUSKED:
-              b.availableByState.HUSKED +
-              (own.get(allocKey(b.id, 'HUSKED')) ?? 0),
-            DEHUSKED:
-              b.availableByState.DEHUSKED +
-              (own.get(allocKey(b.id, 'DEHUSKED')) ?? 0),
-          },
+          available: Object.fromEntries(
+            states.map(st => [
+              st,
+              roundQty(
+                (b.availableByState[st] ?? 0) +
+                  (own.get(allocKey(b.id, st)) ?? 0)
+              ),
+            ])
+          ) as StockByState,
         }))
-        .filter(b => b.available.HUSKED + b.available.DEHUSKED > 0)
+        .filter(b => stockTotal(b.available) > 0)
         .sort((a, b) => a.batchDate.localeCompare(b.batchDate)),
-    [batches, own]
+    [batches, own, cropCode, states]
   );
 
+  const changeCrop = (next: string) => {
+    setCropCode(next);
+    setAlloc({});
+    setFillState(statesFor(next)[0] ?? 'HUSKED');
+    setLines(ls => ls.map(l => ({ ...l, sizeClass: '', quantity: '' })));
+  };
+
   const parsedLines = lines.map(l => ({
-    sizeClass: l.sizeClass || null,
-    quantity: int(l.quantity),
+    sizeClass: isCoconut ? l.sizeClass || null : null,
+    quantity: parseQty(l.quantity),
     unitPrice: dec(l.unitPrice),
   }));
   const validLines = parsedLines.filter(
@@ -180,7 +238,9 @@ export function SaleForm({
     validLines,
     Number.isFinite(actualNum) ? actualNum : null
   );
-  const allocated = Object.values(alloc).reduce((s, v) => s + (int(v) || 0), 0);
+  const allocated = roundQty(
+    Object.values(alloc).reduce((sum, v) => sum + (parseQty(v) || 0), 0)
+  );
   const buyer = buyers.find(b => b.id === buyerId);
 
   const setLine = (key: number, patch: Partial<LineDraft>) =>
@@ -213,16 +273,21 @@ export function SaleForm({
       l => !(l.quantity > 0) || !(l.unitPrice >= 0)
     );
     if (validLines.length === 0) return setProblem(t('form.errors.noLines'));
-    if (bad !== -1) return setProblem(t('form.errors.badLine', { n: bad + 1 }));
+    if (bad !== -1)
+      return setProblem(
+        t(isCoconut ? 'form.errors.badLine' : 'form.errors.badLineGeneric', {
+          n: bad + 1,
+        })
+      );
     for (const b of stock) {
-      for (const s of STATES) {
-        const n = int(alloc[allocKey(b.batchId, s)] ?? '') || 0;
-        if (n > b.available[s])
+      for (const st of states) {
+        const n = parseQty(alloc[allocKey(b.batchId, st)] ?? '') || 0;
+        if (n > (b.available[st] ?? 0))
           return setProblem(
             t('form.errors.tooMuch', {
               date: fmtDate(b.batchDate),
-              available: b.available[s],
-              state: stateName(s).toLowerCase(),
+              available: b.available[st] ?? 0,
+              state: isCoconut ? stateName(st).toLowerCase() : unitLabel,
             })
           );
       }
@@ -235,7 +300,7 @@ export function SaleForm({
     const allocations = Object.entries(alloc)
       .map(([k, v]) => {
         const [batchId, state] = k.split('#') as [string, ProduceState];
-        return { batchId, state, quantity: int(v) || 0 };
+        return { batchId, state, quantity: parseQty(v) || 0 };
       })
       .filter(a => a.quantity > 0);
     return onSubmit({
@@ -256,6 +321,21 @@ export function SaleForm({
         <Card>
           <CardContent>
             <Stack spacing={2}>
+              {crops.length > 1 && (
+                <TextField
+                  select
+                  label={t('form.crop')}
+                  value={cropCode}
+                  onChange={e => changeCrop(e.target.value)}
+                  disabled={Boolean(sale)}
+                >
+                  {crops.map(c => (
+                    <MenuItem key={c.cropCode} value={c.cropCode}>
+                      {c.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
               <TextField
                 label={t('form.date')}
                 type='date'
@@ -298,7 +378,7 @@ export function SaleForm({
                 {t('form.lines')}
               </Typography>
               <Typography variant='body2' color='text.secondary'>
-                {t('form.linesHelp')}
+                {isCoconut ? t('form.linesHelp') : t('form.linesHelpGeneric')}
               </Typography>
               {lines.map((l, i) => {
                 const p = parsedLines[i]!;
@@ -311,39 +391,46 @@ export function SaleForm({
                     sx={{
                       display: 'grid',
                       gap: 1,
-                      gridTemplateColumns: {
-                        xs: '1fr 1fr auto',
-                        sm: '2fr 1fr 1fr auto',
-                      },
+                      gridTemplateColumns: isCoconut
+                        ? { xs: '1fr 1fr auto', sm: '2fr 1fr 1fr auto' }
+                        : '1fr 1fr auto',
                       alignItems: 'start',
                     }}
                   >
+                    {isCoconut && (
+                      <TextField
+                        select
+                        label={t('form.size')}
+                        value={l.sizeClass}
+                        onChange={e =>
+                          setLine(l.key, { sizeClass: e.target.value })
+                        }
+                        sx={{ gridColumn: { xs: '1 / -1', sm: 'auto' } }}
+                      >
+                        <MenuItem value=''>{t('form.anySize')}</MenuItem>
+                        {SIZE_CLASSES.map(s => (
+                          <MenuItem key={s} value={s}>
+                            {ts(`sizes.${s}`)}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    )}
                     <TextField
-                      select
-                      label={t('form.size')}
-                      value={l.sizeClass}
-                      onChange={e =>
-                        setLine(l.key, { sizeClass: e.target.value })
+                      label={
+                        isCoconut
+                          ? t('form.quantity')
+                          : t('form.quantityUnit', { unit: unitLabel })
                       }
-                      sx={{ gridColumn: { xs: '1 / -1', sm: 'auto' } }}
-                    >
-                      <MenuItem value=''>{t('form.anySize')}</MenuItem>
-                      {SIZE_CLASSES.map(s => (
-                        <MenuItem key={s} value={s}>
-                          {ts(`sizes.${s}`)}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                    <TextField
-                      label={t('form.quantity')}
                       value={l.quantity}
                       onChange={e =>
                         setLine(l.key, {
-                          quantity: e.target.value.replace(/\D/g, ''),
+                          quantity: e.target.value.replace(
+                            whole ? /\D/g : /[^\d.]/g,
+                            ''
+                          ),
                         })
                       }
-                      inputMode='numeric'
-                      inputProps={{ pattern: '[0-9]*' }}
+                      inputMode={whole ? 'numeric' : 'decimal'}
                     />
                     <TextField
                       label={t('form.price')}
@@ -399,7 +486,11 @@ export function SaleForm({
                 aria-live='polite'
               >
                 <Typography>
-                  {t('form.totalNuts')}: <strong>{totals.totalQuantity}</strong>
+                  {isCoconut ? t('form.totalNuts') : t('form.totalQty')}:{' '}
+                  <strong>
+                    {totals.totalQuantity}
+                    {isCoconut ? '' : ` ${unitLabel}`}
+                  </strong>
                 </Typography>
                 <Typography>
                   {t('form.calculated')}:{' '}
@@ -433,9 +524,9 @@ export function SaleForm({
                       }
                       aria-label={t('form.stock')}
                     >
-                      {STATES.map(s => (
-                        <ToggleButton key={s} value={s}>
-                          {stateName(s)}
+                      {states.map(st => (
+                        <ToggleButton key={st} value={st}>
+                          {stateName(st)}
                         </ToggleButton>
                       ))}
                     </ToggleButtonGroup>
@@ -452,7 +543,14 @@ export function SaleForm({
                   {stock.map(b => (
                     <Box key={b.batchId}>
                       <Typography variant='subtitle2'>
-                        {t('form.batchRow', { date: fmtDate(b.batchDate) })}
+                        {isCoconut
+                          ? t('form.batchRow', { date: fmtDate(b.batchDate) })
+                          : ti('produce.cropBatchLabel', {
+                              crop:
+                                crops.find(c => c.cropCode === cropCode)
+                                  ?.name ?? cropCode,
+                              date: fmtDate(b.batchDate),
+                            })}
                       </Typography>
                       <Box
                         sx={{
@@ -462,29 +560,42 @@ export function SaleForm({
                           mt: 0.5,
                         }}
                       >
-                        {STATES.filter(
-                          s =>
-                            b.available[s] > 0 || alloc[allocKey(b.batchId, s)]
-                        ).map(s => (
-                          <TextField
-                            key={s}
-                            size='small'
-                            label={t('form.takeState', {
-                              state: stateName(s),
-                              available: b.available[s],
-                            })}
-                            value={alloc[allocKey(b.batchId, s)] ?? ''}
-                            onChange={e =>
-                              setAlloc(a => ({
-                                ...a,
-                                [allocKey(b.batchId, s)]:
-                                  e.target.value.replace(/\D/g, ''),
-                              }))
-                            }
-                            inputMode='numeric'
-                            inputProps={{ pattern: '[0-9]*' }}
-                          />
-                        ))}
+                        {states
+                          .filter(
+                            s =>
+                              (b.available[s] ?? 0) > 0 ||
+                              alloc[allocKey(b.batchId, s)]
+                          )
+                          .map(s => (
+                            <TextField
+                              key={s}
+                              size='small'
+                              label={
+                                isCoconut
+                                  ? t('form.takeState', {
+                                      state: stateName(s),
+                                      available: b.available[s] ?? 0,
+                                    })
+                                  : t('form.takeStateQty', {
+                                      state: stateName(s),
+                                      available: b.available[s] ?? 0,
+                                      unit: unitLabel,
+                                    })
+                              }
+                              value={alloc[allocKey(b.batchId, s)] ?? ''}
+                              onChange={e =>
+                                setAlloc(a => ({
+                                  ...a,
+                                  [allocKey(b.batchId, s)]:
+                                    e.target.value.replace(
+                                      whole ? /\D/g : /[^\d.]/g,
+                                      ''
+                                    ),
+                                }))
+                              }
+                              inputMode={whole ? 'numeric' : 'decimal'}
+                            />
+                          ))}
                       </Box>
                     </Box>
                   ))}
@@ -496,10 +607,16 @@ export function SaleForm({
                         : 'warning.main'
                     }
                   >
-                    {t('form.allocated', {
-                      done: allocated,
-                      total: totals.totalQuantity,
-                    })}
+                    {isCoconut
+                      ? t('form.allocated', {
+                          done: allocated,
+                          total: totals.totalQuantity,
+                        })
+                      : t('form.allocatedQty', {
+                          done: allocated,
+                          total: totals.totalQuantity,
+                          unit: unitLabel,
+                        })}
                   </Typography>
                 </>
               )}
