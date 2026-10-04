@@ -13,6 +13,7 @@ import {
   restorePluckingRound,
   restoreTreeHarvest,
 } from './corrections';
+import { createBuyer, getBuyer, listBuyers, updateBuyer } from './buyers';
 import { createTenant } from './createTenant';
 import {
   createInputItem,
@@ -90,6 +91,10 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       createInputItem,
       updateInputItem,
       recordInputMovement,
+      listBuyers,
+      getBuyer,
+      createBuyer,
+      updateBuyer,
       getTreeHistory,
       listDueTrees,
       recordCoconutSample,

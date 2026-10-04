@@ -968,11 +968,83 @@ const stock = a.schema({
     .handler(a.handler.function(farmApi)),
 });
 
+/**
+ * Sales bounded context: buyers (§13.1–13.2) and sales (§13.3–13.5).
+ * Refs stay inside this schema (ADR-0005).
+ */
+const sales = a.schema({
+  Buyer: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    name: a.string().required(),
+    contactName: a.string(),
+    phone: a.string(),
+    preferredSizes: a.string().required().array().required(),
+    acceptableSizes: a.string().required().array().required(),
+    requirementNote: a.string(),
+    notes: a.string(),
+    status: a.string().required(),
+    version: a.integer().required(),
+    createdAt: a.string(),
+    updatedAt: a.string(),
+  }),
+
+  listBuyers: a
+    .query()
+    .arguments({ tenantId: a.id().required(), includeArchived: a.boolean() })
+    .returns(a.ref('Buyer').required().array().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  getBuyer: a
+    .query()
+    .arguments({ tenantId: a.id().required(), buyerId: a.id().required() })
+    .returns(a.ref('Buyer').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  createBuyer: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      buyerId: a.id().required(),
+      name: a.string().required(),
+      contactName: a.string(),
+      phone: a.string(),
+      preferredSizes: a.string().required().array(),
+      acceptableSizes: a.string().required().array(),
+      requirementNote: a.string(),
+      notes: a.string(),
+    })
+    .returns(a.ref('Buyer').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  updateBuyer: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      buyerId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      name: a.string(),
+      contactName: a.string(),
+      phone: a.string(),
+      preferredSizes: a.string().required().array(),
+      acceptableSizes: a.string().required().array(),
+      requirementNote: a.string(),
+      notes: a.string(),
+      status: a.string(),
+    })
+    .returns(a.ref('Buyer').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+});
+
 /** Client typing for the core schema (the web client uses untyped calls). */
 export type Schema = ClientSchema<typeof schema>;
 
 export const data = defineData({
-  schema: a.combine([schema, stock]),
+  schema: a.combine([schema, stock, sales]),
   authorizationModes: {
     defaultAuthorizationMode: 'userPool',
   },

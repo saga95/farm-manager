@@ -12,6 +12,7 @@ import enInventory from '../../public/locales/en/inventory.json';
 import enNavigation from '../../public/locales/en/navigation.json';
 import enPlucking from '../../public/locales/en/plucking.json';
 import enMedia from '../../public/locales/en/media.json';
+import enSales from '../../public/locales/en/sales.json';
 import enSamples from '../../public/locales/en/samples.json';
 import enSetup from '../../public/locales/en/setup.json';
 import enShell from '../../public/locales/en/shell.json';
@@ -35,6 +36,7 @@ export const NAMESPACES = [
   'samples',
   'media',
   'inventory',
+  'sales',
 ] as const;
 
 const resources = {
@@ -52,6 +54,7 @@ const resources = {
     samples: enSamples,
     media: enMedia,
     inventory: enInventory,
+    sales: enSales,
   },
 };
 
