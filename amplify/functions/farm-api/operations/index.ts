@@ -19,6 +19,13 @@ import {
 } from './farm';
 import { me } from './me';
 import { getTreeHistory, listDueTrees } from './history';
+import {
+  archiveMedia,
+  completeMediaUpload,
+  getMediaOriginalUrl,
+  initiateMediaUpload,
+  listMedia,
+} from './media';
 import { recordCoconutSample } from './samples';
 import { listProduceBatches } from './inventory';
 import {
@@ -59,5 +66,10 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       getTreeHistory,
       listDueTrees,
       recordCoconutSample,
+      initiateMediaUpload,
+      completeMediaUpload,
+      listMedia,
+      getMediaOriginalUrl,
+      archiveMedia,
     ].map(op => [op.name, op])
   );
