@@ -43,6 +43,7 @@ const schema = a.schema({
   TenantMembership: a.customType({
     tenantId: a.id().required(),
     tenantName: a.string().required(),
+    currency: a.string(),
     profileId: a.string().required(),
     profileName: a.string().required(),
     entitlements: a.string().required().array().required(),
@@ -988,6 +989,136 @@ const sales = a.schema({
     createdAt: a.string(),
     updatedAt: a.string(),
   }),
+
+  SaleLine: a.customType({
+    sizeClass: a.string(),
+    quantity: a.integer().required(),
+    unitPrice: a.float().required(),
+    lineAmount: a.float().required(),
+  }),
+
+  SaleAllocation: a.customType({
+    batchId: a.id().required(),
+    state: a.string().required(),
+    quantity: a.integer().required(),
+  }),
+
+  Sale: a.customType({
+    id: a.id().required(),
+    tenantId: a.id().required(),
+    farmId: a.id().required(),
+    saleDate: a.string().required(),
+    buyerId: a.id(),
+    buyerName: a.string(),
+    cropCode: a.string().required(),
+    quantityUnit: a.string().required(),
+    lines: a.ref('SaleLine').required().array().required(),
+    allocations: a.ref('SaleAllocation').required().array().required(),
+    totalQuantity: a.integer().required(),
+    calculatedAmount: a.float().required(),
+    actualAmountReceived: a.float(),
+    difference: a.float(),
+    differenceReason: a.string(),
+    currency: a.string().required(),
+    notes: a.string(),
+    status: a.string().required(),
+    deletedAt: a.string(),
+    deleteReason: a.string(),
+    version: a.integer().required(),
+    createdAt: a.string(),
+    createdBy: a.string(),
+    updatedAt: a.string(),
+    updatedBy: a.string(),
+  }),
+
+  SalesPage: a.customType({
+    sales: a.ref('Sale').required().array().required(),
+    nextToken: a.string(),
+  }),
+
+  recordSale: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      saleId: a.id().required(),
+      saleDate: a.string().required(),
+      currency: a.string(),
+      buyerId: a.id(),
+      lines: a.json().required(),
+      allocations: a.json().required(),
+      actualAmountReceived: a.float(),
+      differenceReason: a.string(),
+      notes: a.string(),
+    })
+    .returns(a.ref('Sale').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  updateSale: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      saleId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      reason: a.string(),
+      buyerId: a.id(),
+      lines: a.json().required(),
+      allocations: a.json().required(),
+      actualAmountReceived: a.float(),
+      differenceReason: a.string(),
+      notes: a.string(),
+    })
+    .returns(a.ref('Sale').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  archiveSale: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      saleId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      reason: a.string(),
+    })
+    .returns(a.ref('Sale').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  restoreSale: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      saleId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      reason: a.string(),
+    })
+    .returns(a.ref('Sale').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  getSale: a
+    .query()
+    .arguments({ tenantId: a.id().required(), saleId: a.id().required() })
+    .returns(a.ref('Sale').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  listSales: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      buyerId: a.id(),
+      from: a.string(),
+      to: a.string(),
+      includeDeleted: a.boolean(),
+      limit: a.integer(),
+      nextToken: a.string(),
+    })
+    .returns(a.ref('SalesPage').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
 
   listBuyers: a
     .query()

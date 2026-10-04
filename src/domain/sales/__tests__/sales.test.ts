@@ -1,5 +1,6 @@
 import {
   allocationDelta,
+  autoAllocate,
   calculatedAmount,
   lineAmount,
   mergeAllocations,
@@ -93,5 +94,35 @@ describe('stock allocation (§13.5)', () => {
       { batchId: 'b1', state: 'HUSKED', quantity: -3 },
       { batchId: 'b2', state: 'HUSKED', quantity: 5 },
     ]);
+  });
+});
+
+describe('autoAllocate (FIFO suggestion)', () => {
+  const batches = [
+    {
+      batchId: 'new',
+      batchDate: '2026-10-03',
+      available: { HUSKED: 50, DEHUSKED: 0 },
+    },
+    {
+      batchId: 'old',
+      batchDate: '2026-10-01',
+      available: { HUSKED: 30, DEHUSKED: 10 },
+    },
+  ];
+  it('takes the oldest stock first', () => {
+    expect(autoAllocate(40, batches, 'HUSKED')).toEqual({
+      allocations: [
+        { batchId: 'old', state: 'HUSKED', quantity: 30 },
+        { batchId: 'new', state: 'HUSKED', quantity: 10 },
+      ],
+      short: 0,
+    });
+  });
+  it('reports a shortfall instead of overselling', () => {
+    expect(autoAllocate(12, batches, 'DEHUSKED')).toEqual({
+      allocations: [{ batchId: 'old', state: 'DEHUSKED', quantity: 10 }],
+      short: 2,
+    });
   });
 });

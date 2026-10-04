@@ -127,3 +127,33 @@ export function validateSale(
     return { code: 'ALLOCATION_MISMATCH', sold, allocated };
   return null;
 }
+
+export interface BatchStock {
+  batchId: string;
+  batchDate: string;
+  available: Record<StockState, number>;
+}
+
+/**
+ * Suggest where sold nuts come from: oldest stock first (FIFO) in the chosen
+ * state. Returns what it could cover; `short` > 0 means not enough stock.
+ */
+export function autoAllocate(
+  quantity: number,
+  batches: readonly BatchStock[],
+  state: StockState
+): { allocations: Allocation[]; short: number } {
+  let left = quantity;
+  const allocations: Allocation[] = [];
+  for (const b of [...batches].sort((x, y) =>
+    x.batchDate.localeCompare(y.batchDate)
+  )) {
+    if (left <= 0) break;
+    const take = Math.min(left, b.available[state]);
+    if (take > 0) {
+      allocations.push({ batchId: b.batchId, state, quantity: take });
+      left -= take;
+    }
+  }
+  return { allocations, short: Math.max(0, left) };
+}
