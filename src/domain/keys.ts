@@ -139,6 +139,17 @@ export const keys: KeyBuilders = {
     SK: `TX${SEP}${assertId('txnDate', txnDate)}${SEP}${txnId}`,
   }),
 
+  /** Dehusked sample: ONE per tree harvest, keyed by the harvest (§9.2). */
+  sample: (
+    tenantId: string,
+    treeId: string,
+    harvestDate: string,
+    harvestId: string
+  ): Key => ({
+    PK: keys.treePk(tenantId, treeId),
+    SK: `S${SEP}${assertId('harvestDate', harvestDate)}${SEP}${assertId('harvestId', harvestId)}`,
+  }),
+
   /** GSI2: get any entity by id; results MUST be tenant-checked. */
   byId: (id: string) => ({ GSI2PK: `ID${SEP}${assertId('id', id)}` }),
 
@@ -219,6 +230,12 @@ interface KeyBuilders {
     batchId: string,
     txnDate: string,
     txnId: string
+  ) => Key;
+  sample: (
+    tenantId: string,
+    treeId: string,
+    harvestDate: string,
+    harvestId: string
   ) => Key;
   byId: (id: string) => { GSI2PK: string };
   audit: (

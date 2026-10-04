@@ -19,6 +19,7 @@ import {
 } from './farm';
 import { me } from './me';
 import { getTreeHistory, listDueTrees } from './history';
+import { recordCoconutSample } from './samples';
 import { listProduceBatches } from './inventory';
 import {
   completePluckingRound,
@@ -57,5 +58,6 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       listProduceBatches,
       getTreeHistory,
       listDueTrees,
+      recordCoconutSample,
     ].map(op => [op.name, op])
   );

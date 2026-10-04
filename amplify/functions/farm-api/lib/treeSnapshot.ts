@@ -11,6 +11,7 @@ import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { treeYieldSummary } from '../../../../src/domain/coconut';
 import { keys } from '../../../../src/domain/keys';
 import { predictNextPlucking } from '../../../../src/domain/prediction';
+import { type SizeClass, sizeHistory } from '../../../../src/domain/samples';
 import { type Item, getById, queryPrefix } from './crud';
 import { ddb, tableName } from './db';
 import type { TenantContext } from './operation';
@@ -72,6 +73,58 @@ export async function refreshTreeSnapshot(
         ':q': summary.lastQuantity,
         ':n': summary.harvestCount,
         ':t': summary.lifetimeTotal,
+        ':tenant': ctx.access.tenantId,
+      },
+    })
+  );
+}
+
+// ─── Sample snapshot (§9.4) ─────────────────────────────────────────────────────
+
+export async function treeSamples(
+  ctx: TenantContext,
+  treeId: string
+): Promise<Item[]> {
+  const items = await queryPrefix(
+    keys.treePk(ctx.access.tenantId, treeId),
+    'S#'
+  );
+  return items.filter(
+    i =>
+      i['tenantId'] === ctx.access.tenantId &&
+      i['entityType'] === 'CoconutSample'
+  );
+}
+
+export function computeSizeHistory(samples: readonly Item[]) {
+  return sizeHistory(
+    samples.map(s => ({
+      sampledAt: String(s['sampledAt']),
+      sizeClass: s['sizeClass'] as SizeClass,
+      deletedAt: s['deletedAt'] as string | null | undefined,
+    }))
+  );
+}
+
+/** Store latest size + tendency on the tree for list filters and planning. */
+export async function refreshTreeSampleSnapshot(
+  ctx: TenantContext,
+  treeId: string
+): Promise<void> {
+  const tree = await getById(treeId, ctx);
+  if (!tree || tree['entityType'] !== 'Tree') return;
+  const h = computeSizeHistory(await treeSamples(ctx, treeId));
+  await ddb.send(
+    new UpdateCommand({
+      TableName: tableName(),
+      Key: { PK: tree['PK'], SK: tree['SK'] },
+      UpdateExpression:
+        'SET latestSampleSize = :l, sizeTendency = :t, sampleCount = :n',
+      ConditionExpression: 'tenantId = :tenant',
+      ExpressionAttributeValues: {
+        ':l': h.latest,
+        ':t': h.tendency,
+        ':n': h.sampleCount,
         ':tenant': ctx.access.tenantId,
       },
     })
