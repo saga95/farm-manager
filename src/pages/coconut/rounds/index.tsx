@@ -17,6 +17,7 @@ import { useTenant } from '@/features/tenant';
 /** Plucking rounds list (newest first); open rounds can be resumed. */
 export default function RoundsPage() {
   const { t, i18n } = useTranslation('plucking');
+  const { t: tb } = useTranslation('backfill');
   const router = useRouter();
   const { can } = useTenant();
   const canRestore = can('record.restore');
@@ -71,7 +72,11 @@ export default function RoundsPage() {
                     nuts: r.totalNuts ?? 0,
                   })
                 : t('rounds.summaryOpen', { count: r.plannedTreeIds.length }),
-            badge: r.deletedAt ? t('rounds.removed') : t(`status.${r.status}`),
+            badge: r.deletedAt
+              ? t('rounds.removed')
+              : r.backfilled && r.source
+                ? tb(`badge.${r.source}`)
+                : t(`status.${r.status}`),
           }))}
           onSelect={id => void router.push(`/coconut/rounds/${id}`)}
           empty={

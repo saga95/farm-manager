@@ -2,16 +2,19 @@ import { useState } from 'react';
 import NextLink from 'next/link';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
+import Switch from '@mui/material/Switch';
 import Typography from '@mui/material/Typography';
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
@@ -28,6 +31,7 @@ import { SizeHistoryCard } from '@/features/samples/components/SizeHistoryCard';
 import { StatTile } from '@/components/ui/StatTile/StatTile';
 import { useZones } from '@/features/farm/hooks';
 import { useTenant } from '@/features/tenant';
+import { type TreeHarvest, setHarvestPredictionUse } from '@/lib/api';
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
@@ -52,6 +56,14 @@ export default function TreeProfilePage() {
       : undefined;
   const tree = useTree(treeId);
   const history = useTreeHistory(treeId);
+  const { t: tb } = useTranslation('backfill');
+  const qc = useQueryClient();
+  // AC-BF-005: include / exclude a harvest from prediction
+  const predictionUse = useMutation({
+    mutationFn: (a: { harvest: TreeHarvest; exclude: boolean }) =>
+      setHarvestPredictionUse(tenant?.tenantId ?? '', a.harvest, a.exclude),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['treeHistory'] }),
+  });
   const summary = history.data?.summary;
   const { i18n } = useTranslation();
   const fmtDate = (iso: string) =>
@@ -59,7 +71,8 @@ export default function TreeProfilePage() {
       new Date(`${iso}T00:00:00`)
     );
   const zones = useZones(true);
-  const { can } = useTenant();
+  const { can, tenant } = useTenant();
+  const canEdit = can('record.edit');
   const [editing, setEditing] = useState(false);
   const { data } = tree;
   const zone = data?.zoneId
@@ -235,7 +248,42 @@ export default function TreeProfilePage() {
                   >
                     <ListItemText
                       primary={`${h.quantity ?? '—'} ${t('history.nuts')}`}
-                      secondary={fmtDate(h.harvestDate)}
+                      secondary={
+                        <>
+                          {fmtDate(h.harvestDate)}
+                          {h.source && h.source !== 'LIVE_APP' && (
+                            <> · {tb(`badge.${h.source}`)}</>
+                          )}
+                          {canEdit ? (
+                            <FormControlLabel
+                              sx={{ display: 'flex', ml: 0 }}
+                              control={
+                                <Switch
+                                  size='small'
+                                  checked={!h.excludeFromPrediction}
+                                  disabled={predictionUse.isLoading}
+                                  onChange={e =>
+                                    void predictionUse.mutateAsync({
+                                      harvest: h,
+                                      exclude: !e.target.checked,
+                                    })
+                                  }
+                                />
+                              }
+                              label={tb(
+                                h.excludeFromPrediction
+                                  ? 'prediction.excluded'
+                                  : 'prediction.use'
+                              )}
+                            />
+                          ) : (
+                            h.excludeFromPrediction && (
+                              <> · {tb('prediction.excluded')}</>
+                            )
+                          )}
+                        </>
+                      }
+                      secondaryTypographyProps={{ component: 'div' }}
                       primaryTypographyProps={{ fontWeight: 600 }}
                     />
                     {h.recordQuality === 'APPROXIMATE' && (

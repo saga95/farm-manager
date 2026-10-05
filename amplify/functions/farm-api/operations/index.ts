@@ -24,6 +24,7 @@ import {
   recordCycleHarvest,
   updateCycle,
 } from './cycles';
+import { backfillRound, setHarvestPredictionUse } from './backfill';
 import { createTenant } from './createTenant';
 import {
   createInputItem,
@@ -53,6 +54,7 @@ import {
 } from './media';
 import {
   archiveSale,
+  backfillSale,
   getSale,
   listSales,
   recordSale,
@@ -145,6 +147,9 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       updateMember,
       saveRole,
       saveProfile,
+      backfillRound,
+      setHarvestPredictionUse,
+      backfillSale,
       getTreeHistory,
       listDueTrees,
       recordCoconutSample,

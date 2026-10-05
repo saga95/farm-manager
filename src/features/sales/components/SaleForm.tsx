@@ -61,6 +61,8 @@ export interface SaleFormProps {
   currency: string;
   today: string;
   initialBuyerId?: string | null | undefined;
+  /** Past sale (#101): no stock section; history doesn't change today's stock */
+  backfill?: boolean | undefined;
   saving: boolean;
   error?: string | null | undefined;
   onSubmit: (values: SaleFormValues) => void;
@@ -81,6 +83,7 @@ export function SaleForm({
   currency,
   today,
   initialBuyerId,
+  backfill = false,
   saving,
   error,
   onSubmit,
@@ -127,6 +130,12 @@ export function SaleForm({
               : (b.cropName ?? b.cropCode),
           unit: b.unit,
         });
+    if (backfill && !map.has('COCONUT'))
+      map.set('COCONUT', {
+        cropCode: 'COCONUT',
+        name: ti('produce.coconuts'),
+        unit: 'NUT',
+      });
     return [...map.values()].sort((a, b) =>
       a.cropCode === 'COCONUT'
         ? -1
@@ -134,7 +143,7 @@ export function SaleForm({
           ? 1
           : a.name.localeCompare(b.name)
     );
-  }, [batches, ti]);
+  }, [batches, ti, backfill]);
   const [cropCode, setCropCode] = useState<string>(
     () => sale?.cropCode ?? crops[0]?.cropCode ?? 'COCONUT'
   );
@@ -279,7 +288,7 @@ export function SaleForm({
           n: bad + 1,
         })
       );
-    for (const b of stock) {
+    for (const b of backfill ? [] : stock) {
       for (const st of states) {
         const n = parseQty(alloc[allocKey(b.batchId, st)] ?? '') || 0;
         if (n > (b.available[st] ?? 0))
@@ -292,7 +301,7 @@ export function SaleForm({
           );
       }
     }
-    if (allocated !== totals.totalQuantity)
+    if (!backfill && allocated !== totals.totalQuantity)
       return setProblem(
         t('form.errors.mismatch', { sold: totals.totalQuantity, allocated })
       );
@@ -302,7 +311,7 @@ export function SaleForm({
         const [batchId, state] = k.split('#') as [string, ProduceState];
         return { batchId, state, quantity: parseQty(v) || 0 };
       })
-      .filter(a => a.quantity > 0);
+      .filter(a => a.quantity > 0 && !backfill);
     return onSubmit({
       saleDate,
       buyerId: buyerId || null,
@@ -341,7 +350,7 @@ export function SaleForm({
                 type='date'
                 value={saleDate}
                 onChange={e => setSaleDate(e.target.value)}
-                disabled={Boolean(sale)}
+                disabled={Boolean(sale) && !backfill}
                 InputLabelProps={{ shrink: true }}
                 inputProps={{ max: today }}
               />
@@ -501,128 +510,130 @@ export function SaleForm({
           </CardContent>
         </Card>
 
-        <Card component='section' aria-labelledby='sale-stock'>
-          <CardContent>
-            <Stack spacing={1.5}>
-              <Typography id='sale-stock' variant='h3' component='h2'>
-                {t('form.stock')}
-              </Typography>
-              {stock.length === 0 ? (
-                <Alert severity='warning'>{t('form.noStock')}</Alert>
-              ) : (
-                <>
-                  <Typography variant='body2' color='text.secondary'>
-                    {t('form.stockHelp')}
-                  </Typography>
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                    <ToggleButtonGroup
-                      exclusive
-                      size='small'
-                      value={fillState}
-                      onChange={(_, v: ProduceState | null) =>
-                        v && setFillState(v)
-                      }
-                      aria-label={t('form.stock')}
-                    >
-                      {states.map(st => (
-                        <ToggleButton key={st} value={st}>
-                          {stateName(st)}
-                        </ToggleButton>
-                      ))}
-                    </ToggleButtonGroup>
-                    <Button
-                      variant='outlined'
-                      onClick={fill}
-                      disabled={totals.totalQuantity === 0}
-                    >
-                      {t('form.fill', {
-                        state: stateName(fillState).toLowerCase(),
-                      })}
-                    </Button>
-                  </Stack>
-                  {stock.map(b => (
-                    <Box key={b.batchId}>
-                      <Typography variant='subtitle2'>
-                        {isCoconut
-                          ? t('form.batchRow', { date: fmtDate(b.batchDate) })
-                          : ti('produce.cropBatchLabel', {
-                              crop:
-                                crops.find(c => c.cropCode === cropCode)
-                                  ?.name ?? cropCode,
-                              date: fmtDate(b.batchDate),
-                            })}
-                      </Typography>
-                      <Box
-                        sx={{
-                          display: 'grid',
-                          gap: 1,
-                          gridTemplateColumns: '1fr 1fr',
-                          mt: 0.5,
-                        }}
+        {!backfill && (
+          <Card component='section' aria-labelledby='sale-stock'>
+            <CardContent>
+              <Stack spacing={1.5}>
+                <Typography id='sale-stock' variant='h3' component='h2'>
+                  {t('form.stock')}
+                </Typography>
+                {stock.length === 0 ? (
+                  <Alert severity='warning'>{t('form.noStock')}</Alert>
+                ) : (
+                  <>
+                    <Typography variant='body2' color='text.secondary'>
+                      {t('form.stockHelp')}
+                    </Typography>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                      <ToggleButtonGroup
+                        exclusive
+                        size='small'
+                        value={fillState}
+                        onChange={(_, v: ProduceState | null) =>
+                          v && setFillState(v)
+                        }
+                        aria-label={t('form.stock')}
                       >
-                        {states
-                          .filter(
-                            s =>
-                              (b.available[s] ?? 0) > 0 ||
-                              alloc[allocKey(b.batchId, s)]
-                          )
-                          .map(s => (
-                            <TextField
-                              key={s}
-                              size='small'
-                              label={
-                                isCoconut
-                                  ? t('form.takeState', {
-                                      state: stateName(s),
-                                      available: b.available[s] ?? 0,
-                                    })
-                                  : t('form.takeStateQty', {
-                                      state: stateName(s),
-                                      available: b.available[s] ?? 0,
-                                      unit: unitLabel,
-                                    })
-                              }
-                              value={alloc[allocKey(b.batchId, s)] ?? ''}
-                              onChange={e =>
-                                setAlloc(a => ({
-                                  ...a,
-                                  [allocKey(b.batchId, s)]:
-                                    e.target.value.replace(
-                                      whole ? /\D/g : /[^\d.]/g,
-                                      ''
-                                    ),
-                                }))
-                              }
-                              inputMode={whole ? 'numeric' : 'decimal'}
-                            />
-                          ))}
-                      </Box>
-                    </Box>
-                  ))}
-                  <Typography
-                    aria-live='polite'
-                    color={
-                      allocated === totals.totalQuantity
-                        ? 'text.primary'
-                        : 'warning.main'
-                    }
-                  >
-                    {isCoconut
-                      ? t('form.allocated', {
-                          done: allocated,
-                          total: totals.totalQuantity,
-                        })
-                      : t('form.allocatedQty', {
-                          done: allocated,
-                          total: totals.totalQuantity,
-                          unit: unitLabel,
+                        {states.map(st => (
+                          <ToggleButton key={st} value={st}>
+                            {stateName(st)}
+                          </ToggleButton>
+                        ))}
+                      </ToggleButtonGroup>
+                      <Button
+                        variant='outlined'
+                        onClick={fill}
+                        disabled={totals.totalQuantity === 0}
+                      >
+                        {t('form.fill', {
+                          state: stateName(fillState).toLowerCase(),
                         })}
-                  </Typography>
-                </>
-              )}
-            </Stack>
-          </CardContent>
-        </Card>
+                      </Button>
+                    </Stack>
+                    {stock.map(b => (
+                      <Box key={b.batchId}>
+                        <Typography variant='subtitle2'>
+                          {isCoconut
+                            ? t('form.batchRow', { date: fmtDate(b.batchDate) })
+                            : ti('produce.cropBatchLabel', {
+                                crop:
+                                  crops.find(c => c.cropCode === cropCode)
+                                    ?.name ?? cropCode,
+                                date: fmtDate(b.batchDate),
+                              })}
+                        </Typography>
+                        <Box
+                          sx={{
+                            display: 'grid',
+                            gap: 1,
+                            gridTemplateColumns: '1fr 1fr',
+                            mt: 0.5,
+                          }}
+                        >
+                          {states
+                            .filter(
+                              s =>
+                                (b.available[s] ?? 0) > 0 ||
+                                alloc[allocKey(b.batchId, s)]
+                            )
+                            .map(s => (
+                              <TextField
+                                key={s}
+                                size='small'
+                                label={
+                                  isCoconut
+                                    ? t('form.takeState', {
+                                        state: stateName(s),
+                                        available: b.available[s] ?? 0,
+                                      })
+                                    : t('form.takeStateQty', {
+                                        state: stateName(s),
+                                        available: b.available[s] ?? 0,
+                                        unit: unitLabel,
+                                      })
+                                }
+                                value={alloc[allocKey(b.batchId, s)] ?? ''}
+                                onChange={e =>
+                                  setAlloc(a => ({
+                                    ...a,
+                                    [allocKey(b.batchId, s)]:
+                                      e.target.value.replace(
+                                        whole ? /\D/g : /[^\d.]/g,
+                                        ''
+                                      ),
+                                  }))
+                                }
+                                inputMode={whole ? 'numeric' : 'decimal'}
+                              />
+                            ))}
+                        </Box>
+                      </Box>
+                    ))}
+                    <Typography
+                      aria-live='polite'
+                      color={
+                        allocated === totals.totalQuantity
+                          ? 'text.primary'
+                          : 'warning.main'
+                      }
+                    >
+                      {isCoconut
+                        ? t('form.allocated', {
+                            done: allocated,
+                            total: totals.totalQuantity,
+                          })
+                        : t('form.allocatedQty', {
+                            done: allocated,
+                            total: totals.totalQuantity,
+                            unit: unitLabel,
+                          })}
+                    </Typography>
+                  </>
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardContent>

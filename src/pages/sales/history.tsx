@@ -22,6 +22,7 @@ import { useTenant } from '@/features/tenant';
 export default function SalesHistoryPage() {
   const { t, i18n } = useTranslation('sales');
   const { t: ti } = useTranslation('inventory');
+  const { t: tb } = useTranslation('backfill');
   const router = useRouter();
   const { can, tenant } = useTenant();
   const buyers = useBuyers(true);
@@ -134,7 +135,11 @@ export default function SalesHistoryPage() {
                 s.currency || tenant?.currency || 'LKR'
               ),
             }),
-            badge: s.deletedAt ? t('history.removed') : undefined,
+            badge: s.deletedAt
+              ? t('history.removed')
+              : s.backfilled && s.source
+                ? tb(`badge.${s.source}`)
+                : undefined,
           }))}
           onSelect={id => void router.push(`/sales/${id}`)}
           empty={

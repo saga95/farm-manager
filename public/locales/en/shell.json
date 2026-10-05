@@ -28,7 +28,8 @@
     "settings": "Farm & tenant settings",
     "members": "Members",
     "export": "Export data",
-    "account": "Account"
+    "account": "Account",
+    "backfill": "Enter old records"
   },
   "farm": {
     "coconut": "Coconut trees",

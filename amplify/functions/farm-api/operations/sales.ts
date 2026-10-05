@@ -69,7 +69,8 @@ const parseJson = (v: unknown): unknown => {
   }
 };
 const linesSchema = z.array(lineSchema).min(1).max(50);
-const allocationsSchema = z.array(allocationSchema).min(1).max(20);
+/** Live sales must allocate stock (checkSale); backfilled sales have none. */
+const allocationsSchema = z.array(allocationSchema).max(20);
 
 const saleFields = {
   buyerId: id.nullish(),
@@ -331,9 +332,19 @@ export const updateSale = tenantOperation({
         `Record changed (version ${String(sale['version'])})`
       );
 
-    const allocations = mergeAllocations(input.allocations);
-    checkSale(input.lines, allocations);
-    const crop = await saleCrop(ctx, allocations);
+    // Backfilled history never touched stock, and editing it doesn't either
+    const backfilled = Boolean(sale['backfilled']);
+    const allocations = backfilled ? [] : mergeAllocations(input.allocations);
+    if (backfilled) {
+      if (input.lines.length === 0)
+        throw new ApiError('VALIDATION', 'lines: add at least one line');
+    } else checkSale(input.lines, allocations);
+    const crop = backfilled
+      ? {
+          cropCode: String(sale['cropCode'] ?? 'COCONUT'),
+          unit: String(sale['quantityUnit'] ?? 'NUT'),
+        }
+      : await saleCrop(ctx, allocations);
     if (crop.cropCode !== String(sale['cropCode'] ?? 'COCONUT'))
       throw new ApiError('VALIDATION', "allocations: a sale can't change crop");
     const lines =
@@ -597,5 +608,112 @@ export const listSales = tenantOperation({
           )
         : null,
     };
+  },
+});
+
+// ─── Historical sales (#101, §18.2, AC-BF-002/003) ────────────────────────────
+
+export const backfillSale = tenantOperation({
+  name: 'backfillSale',
+  entitlement: 'backfill.record',
+  input: z.object({
+    tenantId: z.string().min(1),
+    farmId: id,
+    saleId: id,
+    saleDate: isoDate,
+    source: z.enum(['WHATSAPP_BACKFILL', 'MANUAL_BACKFILL']),
+    cropCode: z.string().trim().min(1).max(40).nullish(),
+    quantityUnit: z.enum(['NUT', 'KG', 'G', 'COUNT']).nullish(),
+    currency: z.string().length(3).nullish(),
+    buyerId: id.nullish(),
+    lines: saleFields.lines,
+    actualAmountReceived: money.nullish(),
+    differenceReason: z.string().trim().max(500).nullish(),
+    notes: z.string().trim().max(1000).nullish(),
+  }),
+  handler: async (input, ctx) => {
+    const { tenantId } = ctx.access;
+    if (input.saleDate > ctx.now.slice(0, 10))
+      throw new ApiError(
+        'VALIDATION',
+        'saleDate: a past sale cannot be in the future'
+      );
+    await requireItem(keys.farm(tenantId, input.farmId), ctx, 'Farm');
+    const key = keys.sale(tenantId, input.farmId, input.saleDate, input.saleId);
+    const existing = await getItem(key);
+    if (existing) {
+      if (existing['createdBy'] === ctx.userId) return toView(existing);
+      throw new ApiError('CONFLICT', 'Id already in use');
+    }
+    const cropCode = input.cropCode ?? 'COCONUT';
+    const unit = input.quantityUnit ?? (cropCode === 'COCONUT' ? 'NUT' : 'KG');
+    if (unit === 'NUT' && input.lines.some(l => !Number.isInteger(l.quantity)))
+      throw new ApiError('VALIDATION', 'quantity: whole nuts only');
+    const lines =
+      cropCode === 'COCONUT'
+        ? input.lines
+        : input.lines.map(l => ({ ...l, sizeClass: null }));
+    const buyer = await buyerSnapshot(ctx, input.buyerId);
+    const tenant = await getItem(keys.tenant(tenantId));
+    const sale: Item = {
+      ...key,
+      ...keys.byId(input.saleId),
+      ...(buyer.buyerId
+        ? keys.saleByBuyer(
+            tenantId,
+            buyer.buyerId,
+            input.saleDate,
+            input.saleId
+          )
+        : {}),
+      GSI2SK: 'SALE',
+      entityType: 'Sale',
+      id: input.saleId,
+      tenantId,
+      farmId: input.farmId,
+      saleDate: input.saleDate,
+      ...buyer,
+      cropCode,
+      quantityUnit: unit,
+      ...amounts(lines, input.actualAmountReceived),
+      // History: the nuts were sold back then; today's stock is untouched
+      allocations: [],
+      backfilled: true,
+      source: input.source,
+      recordCreatedAt: ctx.now,
+      differenceReason: input.differenceReason ?? undefined,
+      notes: input.notes ?? undefined,
+      currency: input.currency ?? tenant?.['defaultCurrency'] ?? 'LKR',
+      photoIds: [],
+      status: 'COMPLETE',
+      version: 1,
+      createdAt: ctx.now,
+      createdBy: ctx.userId,
+      updatedAt: ctx.now,
+      updatedBy: ctx.userId,
+    };
+    const clean = Object.fromEntries(
+      Object.entries(sale).filter(([, v]) => v !== undefined)
+    );
+    const replay = await commit(
+      [
+        {
+          Put: {
+            TableName: tableName(),
+            Item: clean,
+            ConditionExpression: 'attribute_not_exists(PK)',
+          },
+        },
+        audit(ctx, input.saleId, 'sale.backfill', {
+          source: input.source,
+          saleDate: input.saleDate,
+        }),
+      ],
+      async () => {
+        const again = await getItem(key);
+        return again && again['createdBy'] === ctx.userId ? again : null;
+      }
+    );
+    return toView(replay ?? clean);
   },
 });

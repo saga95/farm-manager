@@ -164,3 +164,35 @@ describe('SaleForm for polytunnel produce (#96, AC-PT-005)', () => {
     );
   });
 });
+
+describe('SaleForm for a past sale (#101)', () => {
+  it('has no stock section and saves without taking stock', () => {
+    const onSubmit = jest.fn();
+    render(
+      <SaleForm
+        backfill
+        buyers={buyers}
+        batches={[]}
+        currency='LKR'
+        today='2026-10-05'
+        saving={false}
+        onSubmit={onSubmit}
+        onCancel={jest.fn()}
+      />
+    );
+    expect(screen.queryByText('form.stock')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('form.date'), {
+      target: { value: '2026-02-14' },
+    });
+    typeIn('form.quantity', '23');
+    typeIn('form.price', '140');
+    save();
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        saleDate: '2026-02-14',
+        allocations: [],
+        lines: [{ sizeClass: null, quantity: 23, unitPrice: 140 }],
+      })
+    );
+  });
+});

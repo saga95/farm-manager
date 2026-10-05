@@ -391,6 +391,13 @@ export interface PluckingRound {
   completedAt?: string | null;
   deletedAt?: string | null;
   deleteReason?: string | null;
+  /** WHATSAPP_BACKFILL / MANUAL_BACKFILL for history entered later (#101) */
+  source?: string | null;
+  backfilled?: boolean | null;
+  /** Nuts in a past round that couldn't be tied to a tree */
+  unattributedQuantity?: number | null;
+  excludeFromPrediction?: boolean | null;
+  recordCreatedAt?: string | null;
   version: number;
   createdAt?: string | null;
 }
@@ -405,6 +412,9 @@ export interface TreeHarvest {
   recordQuality: string;
   notes?: string | null;
   previousQuantity?: number | null;
+  source?: string | null;
+  backfilled?: boolean | null;
+  excludeFromPrediction?: boolean | null;
   deletedAt?: string | null;
   deleteReason?: string | null;
   updatedBy?: string | null;
@@ -1085,6 +1095,8 @@ export interface Sale {
   notes?: string | null;
   status: string;
   deletedAt?: string | null;
+  backfilled?: boolean | null;
+  source?: string | null;
   version: number;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -1468,3 +1480,69 @@ export const saveProfile = async (
       ...values,
     })
   ) as TeamProfile;
+
+// ─── Historical backfill (#101) ─────────────────────────────────────────────
+
+export type BackfillSource = 'WHATSAPP_BACKFILL' | 'MANUAL_BACKFILL';
+
+export interface BackfillRoundInput {
+  roundId: string;
+  roundDate: string;
+  source: BackfillSource;
+  entries: {
+    treeId: string;
+    harvestId: string;
+    quantity: number;
+    approximate: boolean;
+  }[];
+  unattributedQuantity: number | null;
+  approximate: boolean;
+  excludeFromPrediction: boolean;
+  addToStock: boolean;
+  notes: string | null;
+}
+
+export const backfillRound = async (
+  tenantId: string,
+  farmId: string,
+  input: BackfillRoundInput
+) =>
+  unwrap(
+    await mu('backfillRound')({
+      tenantId,
+      farmId,
+      ...input,
+      entries: JSON.stringify(input.entries),
+    })
+  ) as PluckingRound;
+
+export const backfillSale = async (
+  tenantId: string,
+  input: Omit<SaleInput, 'allocations'> & {
+    farmId: string;
+    saleId: string;
+    saleDate: string;
+    source: BackfillSource;
+  }
+) =>
+  unwrap(
+    await mu('backfillSale')({
+      tenantId,
+      ...input,
+      lines: JSON.stringify(input.lines),
+    })
+  ) as Sale;
+
+export const setHarvestPredictionUse = async (
+  tenantId: string,
+  harvest: TreeHarvest,
+  exclude: boolean
+) =>
+  unwrap(
+    await mu('setHarvestPredictionUse')({
+      tenantId,
+      harvestId: harvest.id,
+      expectedVersion: harvest.version,
+      excludeFromPrediction: exclude,
+    })
+  ) as TreeHarvest;

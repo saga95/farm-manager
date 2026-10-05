@@ -3,6 +3,7 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import Backend from 'i18next-http-backend';
 import enAuth from '../../public/locales/en/auth.json';
+import enBackfill from '../../public/locales/en/backfill.json';
 import enCoconut from '../../public/locales/en/coconut.json';
 import enCommon from '../../public/locales/en/common.json';
 import enDashboard from '../../public/locales/en/dashboard.json';
@@ -41,6 +42,7 @@ export const NAMESPACES = [
   'sales',
   'growing',
   'team',
+  'backfill',
 ] as const;
 
 const resources = {
@@ -61,6 +63,7 @@ const resources = {
     sales: enSales,
     growing: enGrowing,
     team: enTeam,
+    backfill: enBackfill,
   },
 };
 

@@ -64,7 +64,10 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm test -- --coverage
+      # Coverage upload is informational: a Codecov outage (e.g. TLS errors
+      # seen on #154) must never fail the quality gate.
       - uses: codecov/codecov-action@v4
+        continue-on-error: true
         with:
           file: ./coverage/coverage-final.json
           fail_ci_if_error: false
