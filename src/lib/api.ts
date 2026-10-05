@@ -1609,3 +1609,61 @@ export const getAnalytics = async (
   ) as string | AnalyticsReport;
   return typeof raw === 'string' ? (JSON.parse(raw) as AnalyticsReport) : raw;
 };
+
+// ─── Change history (#105) & export (#106) ──────────────────────────────────
+
+export interface AuditEntry {
+  id: string;
+  at: string;
+  action: string;
+  entityId: string;
+  actorId: string;
+  actorEmail?: string | null;
+  /** Parsed from AWSJSON */
+  details: Record<string, unknown>;
+}
+
+export const listAudit = async (
+  tenantId: string,
+  options: {
+    entityId?: string | null;
+    nextToken?: string | null;
+    limit?: number;
+  }
+) => {
+  const d = unwrap(
+    await q('listAudit')({
+      tenantId,
+      entityId: options.entityId ?? null,
+      nextToken: options.nextToken ?? null,
+      limit: options.limit ?? 30,
+    })
+  ) as {
+    entries: (Omit<AuditEntry, 'details'> & {
+      details: string | Record<string, unknown>;
+    })[];
+    nextToken?: string | null;
+  };
+  return {
+    entries: d.entries.map(e => ({
+      ...e,
+      details:
+        typeof e.details === 'string'
+          ? (JSON.parse(e.details) as Record<string, unknown>)
+          : e.details,
+    })),
+    nextToken: d.nextToken ?? null,
+  };
+};
+
+export type ExportKind = 'trees' | 'harvests' | 'samples' | 'sales' | 'stock';
+
+export const exportCsv = async (
+  tenantId: string,
+  farmId: string,
+  kind: ExportKind
+) =>
+  unwrap(await q('exportCsv')({ tenantId, farmId, kind })) as {
+    filename: string;
+    csv: string;
+  };

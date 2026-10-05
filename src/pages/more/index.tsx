@@ -6,6 +6,7 @@ import AccountCircleOutlined from '@mui/icons-material/AccountCircleOutlined';
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined';
 import GroupOutlined from '@mui/icons-material/GroupOutlined';
 import HistoryEduOutlined from '@mui/icons-material/HistoryEduOutlined';
+import ManageHistoryOutlined from '@mui/icons-material/ManageHistoryOutlined';
 import InsightsOutlined from '@mui/icons-material/InsightsOutlined';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
@@ -45,6 +46,11 @@ export default function MorePage() {
             href: '/settings/backfill',
             label: t('more.backfill'),
             icon: <HistoryEduOutlined />,
+          },
+          {
+            href: '/settings/audit',
+            label: t('more.audit'),
+            icon: <ManageHistoryOutlined />,
           },
           {
             href: '/settings/export',

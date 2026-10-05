@@ -14,6 +14,7 @@ import enGrowing from '../../public/locales/en/growing.json';
 import enInventory from '../../public/locales/en/inventory.json';
 import enNavigation from '../../public/locales/en/navigation.json';
 import enPlucking from '../../public/locales/en/plucking.json';
+import enRecords from '../../public/locales/en/records.json';
 import enMedia from '../../public/locales/en/media.json';
 import enSales from '../../public/locales/en/sales.json';
 import enSamples from '../../public/locales/en/samples.json';
@@ -45,6 +46,7 @@ export const NAMESPACES = [
   'team',
   'backfill',
   'analytics',
+  'records',
 ] as const;
 
 const resources = {
@@ -67,6 +69,7 @@ const resources = {
     team: enTeam,
     backfill: enBackfill,
     analytics: enAnalytics,
+    records: enRecords,
   },
 };
 

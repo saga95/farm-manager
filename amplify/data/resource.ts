@@ -1594,6 +1594,49 @@ const access = a.schema({
  * AWSJSON; its shape is defined by src/domain/analytics (ADR-0005).
  */
 const reports = a.schema({
+  AuditEntry: a.customType({
+    id: a.string().required(),
+    at: a.string().required(),
+    action: a.string().required(),
+    entityId: a.string().required(),
+    actorId: a.string().required(),
+    actorEmail: a.string(),
+    details: a.json().required(),
+  }),
+
+  AuditPage: a.customType({
+    entries: a.ref('AuditEntry').required().array().required(),
+    nextToken: a.string(),
+  }),
+
+  CsvExport: a.customType({
+    filename: a.string().required(),
+    csv: a.string().required(),
+  }),
+
+  listAudit: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      entityId: a.string(),
+      limit: a.integer(),
+      nextToken: a.string(),
+    })
+    .returns(a.ref('AuditPage').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  exportCsv: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      kind: a.string().required(),
+    })
+    .returns(a.ref('CsvExport').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
   getAnalytics: a
     .query()
     .arguments({
