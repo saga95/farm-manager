@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ulid } from 'ulid';
 import {
+  ApiError,
   type PluckingRound,
   type PluckingRoundDetail,
   type TreeHarvest,
@@ -19,6 +20,7 @@ import {
   updateRoundPlan,
 } from '@/lib/api';
 import { useCurrentFarm } from '@/features/farm/hooks';
+import { harvestOutbox } from './outbox';
 
 export function useRounds(includeDeleted = false) {
   const { tenantId, farm } = useCurrentFarm();
@@ -65,20 +67,51 @@ export function useRoundActions(roundId: string | undefined) {
   const refresh = () => qc.invalidateQueries({ queryKey: key });
 
   const record = useMutation({
-    mutationFn: (input: {
+    mutationFn: async (input: {
       treeId: string;
       quantity: number;
       approximate: boolean;
       harvestId?: string;
-    }) =>
-      recordTreeHarvest(tenantId, {
-        roundId: roundId as string,
-        treeId: input.treeId,
-        harvestId: input.harvestId ?? ulid(),
-        quantity: input.quantity,
-        recordQuality: input.approximate ? 'APPROXIMATE' : 'CONFIRMED',
-      }),
+    }): Promise<TreeHarvest & { pending?: boolean }> => {
+      // A count already waiting to send keeps its id (no duplicates, §30)
+      const queued = harvestOutbox.find(roundId as string, input.treeId);
+      const harvestId = queued?.harvestId ?? input.harvestId ?? ulid();
+      try {
+        const saved = await recordTreeHarvest(tenantId, {
+          roundId: roundId as string,
+          treeId: input.treeId,
+          harvestId,
+          quantity: input.quantity,
+          recordQuality: input.approximate ? 'APPROXIMATE' : 'CONFIRMED',
+        });
+        if (queued) harvestOutbox.remove(queued.harvestId);
+        return saved;
+      } catch (e) {
+        if (!(e instanceof ApiError) || e.code !== 'NETWORK') throw e;
+        // No signal: keep it on the phone and send it later (#103)
+        harvestOutbox.put({
+          tenantId,
+          roundId: roundId as string,
+          treeId: input.treeId,
+          harvestId,
+          quantity: input.quantity,
+          approximate: input.approximate,
+        });
+        return {
+          id: harvestId,
+          roundId: roundId as string,
+          treeId: input.treeId,
+          treeCode: '',
+          harvestDate: '',
+          quantity: input.quantity,
+          recordQuality: input.approximate ? 'APPROXIMATE' : 'CONFIRMED',
+          version: 0,
+          pending: true,
+        };
+      }
+    },
     onSuccess: harvest => {
+      if (harvest.pending) return undefined; // shown from the outbox until sent
       // Optimistic merge so Save & Next moves on instantly
       qc.setQueryData<PluckingRoundDetail>(key, prev =>
         prev

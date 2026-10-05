@@ -11,6 +11,7 @@ import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import { AppPage } from '@/components/AppPage';
+import { clearPersistentState } from '@/hooks/usePersistentState';
 import { EmptyState } from '@/components/ui/EmptyState/EmptyState';
 import { useBuyers } from '@/features/buyers/hooks';
 import { useTrees } from '@/features/coconut/hooks';
@@ -155,6 +156,7 @@ export default function BackfillPage() {
             ) : (
               <BackfillRoundForm
                 key={`r${formKey}`}
+                draftKey={farm ? `backfill.round.${farm.id}` : null}
                 trees={trees.data ?? []}
                 today={today}
                 saving={round.isLoading}
@@ -164,6 +166,8 @@ export default function BackfillPage() {
                   void round
                     .mutateAsync(v)
                     .then(r => {
+                      if (farm)
+                        clearPersistentState(`backfill.round.${farm.id}`);
                       setSaved({
                         text: t('round.saved', { date: fmt(r.roundDate) }),
                         href: `/coconut/rounds/${r.id}`,

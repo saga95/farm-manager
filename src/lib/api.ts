@@ -67,15 +67,44 @@ const api = (): DataClient =>
     authMode: 'userPool',
   }) as unknown as DataClient);
 
+/** Lost signal / fetch failures, so callers can keep work and retry (§30). */
+export function isNetworkFailure(message: string | undefined): boolean {
+  return /network|failed to fetch|load failed|offline|timeout|ECONNRESET/i.test(
+    message ?? ''
+  );
+}
+
+/** Wrap an Amplify operation so transport failures become ApiError('NETWORK'). */
+const guard =
+  (op: AnyOp): AnyOp =>
+  async vars => {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false)
+      throw new ApiError('NETWORK', 'You are offline');
+    let res: Result<unknown>;
+    try {
+      res = await op(vars);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      throw new ApiError(
+        isNetworkFailure(message) ? 'NETWORK' : 'INTERNAL',
+        message
+      );
+    }
+    const first = res.errors?.[0]?.message;
+    if (first && isNetworkFailure(first) && !/^[A-Z_]+:/.test(first))
+      throw new ApiError('NETWORK', first);
+    return res;
+  };
+
 const q = (name: string): AnyOp => {
   const op = api().queries[name];
   if (!op) throw new ApiError('INTERNAL', `Unknown query ${name}`);
-  return op;
+  return guard(op);
 };
 const mu = (name: string): AnyOp => {
   const op = api().mutations[name];
   if (!op) throw new ApiError('INTERNAL', `Unknown mutation ${name}`);
-  return op;
+  return guard(op);
 };
 
 type Result<T> = {

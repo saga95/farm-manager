@@ -48,5 +48,18 @@
     "produce": "Produce",
     "inputs": "Farm inputs"
   },
-  "skipToContent": "Skip to main content"
+  "skipToContent": "Skip to main content",
+  "offline": {
+    "title": "You're offline",
+    "body": "This page hasn't been opened on this phone yet. Pages you've used before still open, and counts you enter are kept and sent when you're back online.",
+    "retry": "Try again"
+  },
+  "connection": {
+    "offline": "You're offline. Counts and photos are kept on this phone and sent when you're back online.",
+    "pending_one": "{{count}} change waiting to send",
+    "pending_other": "{{count}} changes waiting to send",
+    "failed_one": "{{count}} change couldn't be sent",
+    "failed_other": "{{count}} changes couldn't be sent",
+    "retry": "Send now"
+  }
 }

@@ -11,6 +11,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import ParkOutlined from '@mui/icons-material/ParkOutlined';
 import { AppPage } from '@/components/AppPage';
+import { usePersistentState } from '@/hooks/usePersistentState';
 import { EmptyState } from '@/components/ui/EmptyState/EmptyState';
 import { tokens } from '@/design-system';
 import { useTrees } from '@/features/coconut/hooks';
@@ -26,18 +27,29 @@ export default function NewRoundPage() {
   const trees = useTrees();
   const zones = useZones();
   const create = useCreateRound();
-  const [roundId] = useState(ulid); // stable per visit: a retried start replays
-  const [date, setDate] = useState(() => todayIso(farm?.timezone));
-  const [plucker, setPlucker] = useState('');
+  // Draft survives a reload (#104); the id stays stable so a retried start replays
+  const [draft, setDraft, clearDraft] = usePersistentState(
+    farm ? `round.new.${farm.id}` : null,
+    () => ({
+      roundId: ulid(),
+      date: todayIso(farm?.timezone),
+      plucker: '',
+      selected: [] as string[],
+    })
+  );
+  const { roundId, date, plucker, selected } = draft;
+  const setDate = (v: string) => setDraft(d => ({ ...d, date: v }));
+  const setPlucker = (v: string) => setDraft(d => ({ ...d, plucker: v }));
+  const setSelected = (v: string[]) => setDraft(d => ({ ...d, selected: v }));
   // Preselected from the planning view (?trees=id1,id2), order kept
-  const [selected, setSelected] = useState<string[]>([]);
   const preselect =
     typeof router.query['trees'] === 'string' ? router.query['trees'] : '';
   useEffect(() => {
     if (!preselect || !trees.data) return;
     const valid = new Set(trees.data.map(tr => tr.id));
-    setSelected(preselect.split(',').filter(id => valid.has(id)));
-  }, [preselect, trees.data]);
+    const picked = preselect.split(',').filter(id => valid.has(id));
+    setDraft(d => ({ ...d, selected: picked }));
+  }, [preselect, trees.data, setDraft]);
   const [error, setError] = useState<string | null>(null);
   const zoneName = useMemo(
     () => new Map((zones.data ?? []).map(z => [z.id, z.name])),
@@ -54,6 +66,7 @@ export default function NewRoundPage() {
         plannedTreeIds: selected,
         pluckerName: plucker.trim() || null,
       });
+      clearDraft();
       await router.replace(`/coconut/rounds/${roundId}`);
     } catch {
       setError(t('new.failed'));

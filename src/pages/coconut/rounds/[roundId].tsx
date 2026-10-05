@@ -42,8 +42,9 @@ import {
 } from '@/features/plucking/hooks';
 import { EntityPhotos } from '@/features/media/components/EntityPhotos';
 import { RoundSamplesCard } from '@/features/samples/components/RoundSamplesCard';
+import { usePendingHarvests } from '@/features/plucking/OutboxProvider';
 import { useTenant } from '@/features/tenant';
-import { ApiError } from '@/lib/api';
+import { ApiError, type TreeHarvest } from '@/lib/api';
 import ManageHistoryOutlined from '@mui/icons-material/ManageHistoryOutlined';
 import { ChangeHistory } from '@/features/records/ChangeHistory';
 
@@ -74,7 +75,34 @@ export default function RoundPage() {
   const [roundReason, setRoundReason] = useState('');
 
   const round = detail.data?.round;
-  const harvests = useMemo(() => detail.data?.harvests ?? [], [detail.data]);
+  // Counts waiting to send (no signal) show as recorded, labelled "Not sent yet"
+  const allPending = usePendingHarvests();
+  const pending = useMemo(
+    () => allPending.filter(p => p.roundId === roundId),
+    [allPending, roundId]
+  );
+  const pendingByTree = useMemo(
+    () => new Map(pending.map(p => [p.treeId, p])),
+    [pending]
+  );
+  const harvests = useMemo(() => {
+    const server = detail.data?.harvests ?? [];
+    return [
+      ...server.filter(h => !pendingByTree.has(h.treeId)),
+      ...pending.map(
+        (p): TreeHarvest => ({
+          id: p.harvestId,
+          roundId: p.roundId,
+          treeId: p.treeId,
+          treeCode: '',
+          harvestDate: detail.data?.round.roundDate ?? '',
+          quantity: p.quantity,
+          recordQuality: p.approximate ? 'APPROXIMATE' : 'CONFIRMED',
+          version: 0,
+        })
+      ),
+    ];
+  }, [detail.data, pending, pendingByTree]);
   const treeById = useMemo(
     () => new Map((trees.data ?? []).map(tr => [tr.id, tr])),
     [trees.data]
@@ -171,6 +199,10 @@ export default function RoundPage() {
 
   const doComplete = async () => {
     if (!round) return;
+    if (pending.length > 0) {
+      setCaptureError(t('review.waitForSend', { count: pending.length }));
+      return;
+    }
     try {
       const done = await complete.mutateAsync(round);
       setReviewing(false);
@@ -181,6 +213,11 @@ export default function RoundPage() {
   };
 
   const stateLabel = (treeId: string, state: string) => {
+    const queued = pendingByTree.get(treeId);
+    if (queued)
+      return queued.state === 'FAILED'
+        ? t('capture.sendFailed', { count: queued.quantity })
+        : t('capture.notSent', { count: queued.quantity });
     if (state === 'RECORDED')
       return t('capture.recorded', {
         count: harvestByTree.get(treeId)?.quantity ?? 0,
@@ -369,7 +406,13 @@ export default function RoundPage() {
                     <Chip
                       size='small'
                       label={stateLabel(entry.treeId, entry.state)}
-                      color={entry.state === 'RECORDED' ? 'success' : 'default'}
+                      color={
+                        pendingByTree.has(entry.treeId)
+                          ? 'warning'
+                          : entry.state === 'RECORDED'
+                            ? 'success'
+                            : 'default'
+                      }
                       variant={
                         entry.state === 'PENDING' ? 'outlined' : 'filled'
                       }
@@ -620,6 +663,11 @@ export default function RoundPage() {
           <Typography>
             {t('review.total')}: <strong>{summary.totalNuts}</strong>
           </Typography>
+          {pending.length > 0 && (
+            <Alert severity='warning'>
+              {t('review.waitForSend', { count: pending.length })}
+            </Alert>
+          )}
           {summary.pending > 0 && (
             <Alert severity='warning'>
               {t('review.pendingWarning', { count: summary.pending })}

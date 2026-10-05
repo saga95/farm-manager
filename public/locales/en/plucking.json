@@ -57,7 +57,9 @@
     "invalid": "Enter a whole number from 0 to 500.",
     "failed": "Couldn't save. Check your connection and try again.",
     "conflict": "This round changed on another device. Reloading…",
-    "nextTree": "Next: {{code}}"
+    "nextTree": "Next: {{code}}",
+    "notSent": "{{count}} nuts · not sent yet",
+    "sendFailed": "{{count}} nuts · couldn't send"
   },
   "review": {
     "title": "Review round",
@@ -73,7 +75,9 @@
     "confirm": "Completing adds {{nuts}} coconuts to your stock. Recorded counts can still be corrected later.",
     "back": "Back to recording",
     "needOne": "Record at least one tree before completing.",
-    "done": "Round complete. {{nuts}} coconuts added to stock."
+    "done": "Round complete. {{nuts}} coconuts added to stock.",
+    "waitForSend_one": "{{count}} count is still on this phone. Complete the round once it has been sent (it sends by itself when there is signal).",
+    "waitForSend_other": "{{count}} counts are still on this phone. Complete the round once they have been sent (they send by themselves when there is signal)."
   },
   "detail": {
     "plucker": "Plucker",

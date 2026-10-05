@@ -20,6 +20,8 @@ import { ToastProvider } from '@/components/Toast';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { RBACProvider } from '@/contexts/RBACContext';
 import { MediaUploadProvider } from '@/features/media/MediaUploadProvider';
+import { OutboxSync } from '@/features/plucking/OutboxProvider';
+import { registerServiceWorker } from '@/lib/pwa';
 import { TenantProvider } from '@/features/tenant';
 import { resolveProfileFromCognitoGroups } from '@/rbac';
 import '@/lib/i18n'; // Initialize i18n
@@ -120,6 +122,11 @@ export default function App(props: AppProps) {
   const { Component, pageProps } = props;
   const router = useRouter();
 
+  // Installable app + offline shell (#104)
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
+
   // Track page views (integrate with your analytics provider)
   useEffect(() => {
     const handleRouteChange = (_url: string) => {
@@ -146,6 +153,7 @@ export default function App(props: AppProps) {
               <QueryClientProvider client={queryClient}>
                 <TenantProvider>
                   <MediaUploadProvider>
+                    <OutboxSync />
                     <ErrorBoundary level='app'>
                       <ToastProvider>
                         <SkipLink />
