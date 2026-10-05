@@ -44,6 +44,15 @@ export const isProduction = (): boolean => {
 }
 
 /**
+ * True for any built app (`next build`): dev and prod deployments, and
+ * `next start` locally. False under `next dev`. Used for the service worker,
+ * which must never cache hot-reloaded dev bundles.
+ */
+export const isProductionBuild = (): boolean => {
+  return process.env['NODE_ENV'] === 'production'
+}
+
+/**
  * Check if running on client side
  */
 export const isClient = (): boolean => {

@@ -19,6 +19,13 @@ export default function Document(props: DocumentProps & DocumentHeadTagsProps) {
     <Html lang='en'>
       <Head>
         <DocumentHeadTags {...props} />
+        {/* Installable app (#104): manifest + iOS home-screen icon */}
+        <link rel='manifest' href='/manifest.json' />
+        <link rel='apple-touch-icon' href='/icons/apple-touch-icon.png' />
+        <meta name='apple-mobile-web-app-capable' content='yes' />
+        <meta name='mobile-web-app-capable' content='yes' />
+        <meta name='apple-mobile-web-app-status-bar-style' content='default' />
+        <meta name='apple-mobile-web-app-title' content='Farm' />
         {/* Mobile browser chrome follows the app background */}
         <meta
           name='theme-color'

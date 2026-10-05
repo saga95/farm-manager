@@ -25,6 +25,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import { normalizeTreeCode } from '@/domain/coconut';
+import { usePersistentState } from '@/hooks/usePersistentState';
 import type { BackfillSource, Tree } from '@/lib/api';
 
 export interface BackfillRoundValues {
@@ -44,6 +45,8 @@ export interface BackfillRoundFormProps {
   saving: boolean;
   error?: string | null | undefined;
   onSubmit: (values: BackfillRoundValues) => void;
+  /** Keep what's typed across a reload (#104); null = no draft */
+  draftKey?: string | null | undefined;
 }
 
 export function BackfillRoundForm({
@@ -52,18 +55,32 @@ export function BackfillRoundForm({
   saving,
   error,
   onSubmit,
+  draftKey = null,
 }: BackfillRoundFormProps) {
   const { t } = useTranslation('backfill');
-  const [date, setDate] = useState('');
+  const [draft, setDraft] = usePersistentState(draftKey, {
+    date: '',
+    counts: {} as Record<string, string>,
+    approx: {} as Record<string, boolean>,
+    unattributed: '',
+    notes: '',
+  });
+  const { date, counts, approx, unattributed, notes } = draft;
+  const setDate = (v: string) => setDraft(d => ({ ...d, date: v }));
+  const setCounts = (
+    f: (c: Record<string, string>) => Record<string, string>
+  ) => setDraft(d => ({ ...d, counts: f(d.counts) }));
+  const setApprox = (
+    f: (c: Record<string, boolean>) => Record<string, boolean>
+  ) => setDraft(d => ({ ...d, approx: f(d.approx) }));
+  const setUnattributed = (v: string) =>
+    setDraft(d => ({ ...d, unattributed: v }));
+  const setNotes = (v: string) => setDraft(d => ({ ...d, notes: v }));
   const [source, setSource] = useState<BackfillSource>('WHATSAPP_BACKFILL');
-  const [counts, setCounts] = useState<Record<string, string>>({});
-  const [approx, setApprox] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState('');
-  const [unattributed, setUnattributed] = useState('');
   const [allApprox, setAllApprox] = useState(false);
   const [exclude, setExclude] = useState(false);
   const [addToStock, setAddToStock] = useState(false);
-  const [notes, setNotes] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
 
   const sorted = useMemo(

@@ -12,6 +12,7 @@ import {
   type AppShellProps,
 } from '@/components/ui/AppShell/AppShell';
 import { ComingSoon } from '@/components/ui/ComingSoon/ComingSoon';
+import { ConnectionBanner } from '@/components/ConnectionBanner';
 import { AppGate, useTenant } from '@/features/tenant';
 
 export interface AppPageProps extends Omit<AppShellProps, 'children'> {
@@ -21,6 +22,7 @@ export interface AppPageProps extends Omit<AppShellProps, 'children'> {
 function ShellWithTenant({
   farmName,
   showQuickActions,
+  children,
   ...shell
 }: AppPageProps) {
   const { tenant, can } = useTenant();
@@ -35,7 +37,10 @@ function ShellWithTenant({
       {...shell}
       farmName={farmName ?? tenant?.tenantName}
       showQuickActions={(showQuickActions ?? true) && canCapture}
-    />
+    >
+      <ConnectionBanner />
+      {children}
+    </AppShell>
   );
 }
 
