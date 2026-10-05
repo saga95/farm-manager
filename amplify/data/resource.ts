@@ -1589,11 +1589,30 @@ const access = a.schema({
     .handler(a.handler.function(farmApi)),
 });
 
+/**
+ * Reports bounded context: analytics (§17). One read-only report returned as
+ * AWSJSON; its shape is defined by src/domain/analytics (ADR-0005).
+ */
+const reports = a.schema({
+  getAnalytics: a
+    .query()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      from: a.string().required(),
+      to: a.string().required(),
+      includeNonProducing: a.boolean(),
+    })
+    .returns(a.json().required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+});
+
 /** Client typing for the core schema (the web client uses untyped calls). */
 export type Schema = ClientSchema<typeof schema>;
 
 export const data = defineData({
-  schema: a.combine([schema, stock, sales, growing, access]),
+  schema: a.combine([schema, stock, sales, growing, access, reports]),
   authorizationModes: {
     defaultAuthorizationMode: 'userPool',
   },

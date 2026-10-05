@@ -24,6 +24,7 @@ import {
   recordCycleHarvest,
   updateCycle,
 } from './cycles';
+import { getAnalytics } from './analytics';
 import { backfillRound, setHarvestPredictionUse } from './backfill';
 import { createTenant } from './createTenant';
 import {
@@ -147,6 +148,7 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       updateMember,
       saveRole,
       saveProfile,
+      getAnalytics,
       backfillRound,
       setHarvestPredictionUse,
       backfillSale,
