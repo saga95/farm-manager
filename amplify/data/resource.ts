@@ -160,6 +160,12 @@ const schema = a.schema({
     completedAt: a.string(),
     deletedAt: a.string(),
     deleteReason: a.string(),
+    source: a.string(),
+    backfilled: a.boolean(),
+    unattributedQuantity: a.integer(),
+    recordQuality: a.string(),
+    excludeFromPrediction: a.boolean(),
+    recordCreatedAt: a.string(),
     version: a.integer().required(),
     createdAt: a.string(),
     updatedAt: a.string(),
@@ -181,6 +187,8 @@ const schema = a.schema({
     photoIds: a.id().required().array(),
     source: a.string().required(),
     previousQuantity: a.integer(),
+    backfilled: a.boolean(),
+    recordCreatedAt: a.string(),
     deletedAt: a.string(),
     deleteReason: a.string(),
     version: a.integer().required(),
@@ -624,6 +632,39 @@ const schema = a.schema({
     .authorization(allow => [allow.authenticated()])
     .handler(a.handler.function(farmApi)),
 
+  // ─── Historical backfill (#101, §18, §41.13) ──────────────────────────────
+  backfillRound: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      roundId: a.id().required(),
+      roundDate: a.string().required(),
+      source: a.string().required(),
+      entries: a.json().required(),
+      unattributedQuantity: a.integer(),
+      approximate: a.boolean(),
+      excludeFromPrediction: a.boolean(),
+      addToStock: a.boolean(),
+      pluckerName: a.string(),
+      notes: a.string(),
+    })
+    .returns(a.ref('PluckingRound').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  setHarvestPredictionUse: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      harvestId: a.id().required(),
+      expectedVersion: a.integer().required(),
+      excludeFromPrediction: a.boolean().required(),
+    })
+    .returns(a.ref('TreeHarvest').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
   // ─── Corrections & soft delete (#56, #57, §31) ───────────────────────────
   correctTreeHarvest: a
     .mutation()
@@ -1025,6 +1066,8 @@ const sales = a.schema({
     status: a.string().required(),
     deletedAt: a.string(),
     deleteReason: a.string(),
+    backfilled: a.boolean(),
+    source: a.string(),
     version: a.integer().required(),
     createdAt: a.string(),
     createdBy: a.string(),
@@ -1118,6 +1161,27 @@ const sales = a.schema({
       nextToken: a.string(),
     })
     .returns(a.ref('SalesPage').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
+  backfillSale: a
+    .mutation()
+    .arguments({
+      tenantId: a.id().required(),
+      farmId: a.id().required(),
+      saleId: a.id().required(),
+      saleDate: a.string().required(),
+      source: a.string().required(),
+      cropCode: a.string(),
+      quantityUnit: a.string(),
+      currency: a.string(),
+      buyerId: a.id(),
+      lines: a.json().required(),
+      actualAmountReceived: a.float(),
+      differenceReason: a.string(),
+      notes: a.string(),
+    })
+    .returns(a.ref('Sale').required())
     .authorization(allow => [allow.authenticated()])
     .handler(a.handler.function(farmApi)),
 

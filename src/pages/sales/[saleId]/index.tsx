@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
@@ -29,6 +30,7 @@ export default function SalePage() {
   const { t, i18n } = useTranslation('sales');
   const { t: ts } = useTranslation('samples');
   const { t: ti } = useTranslation('inventory');
+  const { t: tb } = useTranslation('backfill');
   const router = useRouter();
   const saleId =
     typeof router.query['saleId'] === 'string'
@@ -111,6 +113,13 @@ export default function SalePage() {
           <Typography variant='h3' component='h2'>
             {s.buyerName ?? t('sale.walkIn')}
           </Typography>
+          {s.backfilled && s.source && (
+            <Chip
+              label={tb(`badge.${s.source}`)}
+              variant='outlined'
+              sx={{ alignSelf: 'flex-start' }}
+            />
+          )}
           <Box
             sx={{
               display: 'grid',

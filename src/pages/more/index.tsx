@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AccountCircleOutlined from '@mui/icons-material/AccountCircleOutlined';
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined';
 import GroupOutlined from '@mui/icons-material/GroupOutlined';
+import HistoryEduOutlined from '@mui/icons-material/HistoryEduOutlined';
 import InsightsOutlined from '@mui/icons-material/InsightsOutlined';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
@@ -39,6 +40,11 @@ export default function MorePage() {
             href: '/settings/members',
             label: t('more.members'),
             icon: <GroupOutlined />,
+          },
+          {
+            href: '/settings/backfill',
+            label: t('more.backfill'),
+            icon: <HistoryEduOutlined />,
           },
           {
             href: '/settings/export',

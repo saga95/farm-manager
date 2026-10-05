@@ -47,6 +47,7 @@ import { ApiError } from '@/lib/api';
 /** SCR-009 capture + SCR-010 review for one plucking round (plan first, any order). */
 export default function RoundPage() {
   const { t, i18n } = useTranslation('plucking');
+  const { t: tb } = useTranslation('backfill');
   const router = useRouter();
   const roundId =
     typeof router.query['roundId'] === 'string'
@@ -256,6 +257,14 @@ export default function RoundPage() {
               color={open ? 'primary' : 'success'}
               variant='outlined'
             />
+            {round.backfilled && round.source && (
+              <Chip label={tb(`badge.${round.source}`)} variant='outlined' />
+            )}
+            {Boolean(round.unattributedQuantity) && (
+              <Typography color='text.secondary'>
+                {tb('unattributed', { count: round.unattributedQuantity ?? 0 })}
+              </Typography>
+            )}
             {round.pluckerName && (
               <Typography color='text.secondary'>
                 {round.pluckerName}

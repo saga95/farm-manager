@@ -1,0 +1,42 @@
+{
+  "title": "Enter old records",
+  "intro": "Add plucking rounds and sales from before you used the app, for example from WhatsApp. Only link a count to a tree when you're sure which tree it was.",
+  "tabs": { "round": "Past plucking round", "sale": "Past sale" },
+  "source": "Where is this from?",
+  "sources": { "WHATSAPP_BACKFILL": "WhatsApp", "MANUAL_BACKFILL": "Notes / memory" },
+  "badge": { "WHATSAPP_BACKFILL": "From WhatsApp", "MANUAL_BACKFILL": "Entered later" },
+  "round": {
+    "date": "Plucking date",
+    "trees": "Count per tree",
+    "treesHelp": "Leave a tree empty if it wasn't plucked or you don't know its count.",
+    "search": "Find a tree",
+    "count": "Nuts from {{code}}",
+    "approx": "Not sure",
+    "unattributed": "Nuts you can't tie to a tree (optional)",
+    "unattributedHelp": "Counted in the round total, never in any tree's history or prediction.",
+    "total": "Round total: {{count}} nuts",
+    "allApprox": "All counts are estimates",
+    "exclude": "Don't use this round for predictions",
+    "excludeHelp": "Use this when the date or counts may be wrong.",
+    "addToStock": "Add these nuts to current stock",
+    "addToStockHelp": "Usually off: old nuts were sold or used long ago.",
+    "notes": "Notes (optional)",
+    "save": "Save past round",
+    "saving": "Saving…",
+    "saved": "Saved the round of {{date}}. Add another?",
+    "view": "Open it",
+    "empty": "Enter at least one tree count or a round total.",
+    "future": "The date must be today or earlier.",
+    "failed": "Couldn't save. Please try again."
+  },
+  "sale": {
+    "intro": "Past sales are kept for your records and reports. They don't change today's stock.",
+    "saved": "Saved the sale of {{date}}.",
+    "view": "Open it"
+  },
+  "prediction": {
+    "use": "Used for predictions",
+    "excluded": "Not used for predictions"
+  },
+  "unattributed": "{{count}} nuts not tied to a tree"
+}

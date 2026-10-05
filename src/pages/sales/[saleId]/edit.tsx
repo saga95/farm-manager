@@ -36,6 +36,7 @@ export default function EditSalePage() {
       {!loading && sale.data && (
         <SaleForm
           sale={sale.data}
+          backfill={Boolean(sale.data.backfilled)}
           buyers={buyers.data ?? []}
           batches={batches.data ?? []}
           currency={sale.data.currency}
