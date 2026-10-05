@@ -24,6 +24,8 @@ import { EntityPhotos } from '@/features/media/components/EntityPhotos';
 import { useSale, useSaleActions } from '@/features/sales/hooks';
 import { useTenant } from '@/features/tenant';
 import { ApiError } from '@/lib/api';
+import ManageHistoryOutlined from '@mui/icons-material/ManageHistoryOutlined';
+import { ChangeHistory } from '@/features/records/ChangeHistory';
 
 /** SCR-022 Sale detail: lines, calculated AND actual amounts, stock taken (#89). */
 export default function SalePage() {
@@ -31,6 +33,7 @@ export default function SalePage() {
   const { t: ts } = useTranslation('samples');
   const { t: ti } = useTranslation('inventory');
   const { t: tb } = useTranslation('backfill');
+  const { t: tr } = useTranslation('records');
   const router = useRouter();
   const saleId =
     typeof router.query['saleId'] === 'string'
@@ -230,6 +233,14 @@ export default function SalePage() {
           {s.notes && (
             <SummaryCard title={t('sale.notes')}>
               <Typography>{s.notes}</Typography>
+            </SummaryCard>
+          )}
+          {can('audit.view') && (
+            <SummaryCard
+              title={tr('history.section')}
+              icon={<ManageHistoryOutlined fontSize='small' />}
+            >
+              <ChangeHistory entityId={s.id} />
             </SummaryCard>
           )}
           <EntityPhotos

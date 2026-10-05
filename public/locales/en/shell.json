@@ -29,7 +29,8 @@
     "members": "Members",
     "export": "Export data",
     "account": "Account",
-    "backfill": "Enter old records"
+    "backfill": "Enter old records",
+    "audit": "Change history"
   },
   "farm": {
     "coconut": "Coconut trees",

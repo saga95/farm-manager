@@ -252,10 +252,17 @@ export const keys: KeyBuilders = {
     entityId: string,
     at: string,
     auditId: string
-  ): Key => ({
+  ) => ({
     PK: `${t(tenantId)}${SEP}AUD${SEP}${assertId('entityId', entityId)}`,
     SK: `${at}${SEP}${assertId('auditId', auditId)}`,
+    // GSI1: the tenant's change history, newest last (#105)
+    ...keys.auditFeed(tenantId, at, auditId),
   }),
+  auditFeed: (tenantId: string, at: string, auditId: string) => ({
+    GSI1PK: keys.auditFeedPk(tenantId),
+    GSI1SK: `${at}${SEP}${assertId('auditId', auditId)}`,
+  }),
+  auditFeedPk: (tenantId: string) => `${t(tenantId)}${SEP}AUDIT`,
 
   prefix: {
     members: 'MEMBER#',
@@ -386,7 +393,13 @@ interface KeyBuilders {
     entityId: string,
     at: string,
     auditId: string
-  ) => Key;
+  ) => Key & { GSI1PK: string; GSI1SK: string };
+  auditFeed: (
+    tenantId: string,
+    at: string,
+    auditId: string
+  ) => { GSI1PK: string; GSI1SK: string };
+  auditFeedPk: (tenantId: string) => string;
   prefix: Readonly<
     Record<
       | 'members'

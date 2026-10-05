@@ -24,6 +24,7 @@ import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined';
 import { AppPage } from '@/components/AppPage';
 import { EmptyState } from '@/components/ui/EmptyState/EmptyState';
 import { FormDialog } from '@/components/ui/FormDialog/FormDialog';
+import { SummaryCard } from '@/components/ui/SummaryCard/SummaryCard';
 import { tokens } from '@/design-system';
 import {
   nextPendingTree,
@@ -43,11 +44,14 @@ import { EntityPhotos } from '@/features/media/components/EntityPhotos';
 import { RoundSamplesCard } from '@/features/samples/components/RoundSamplesCard';
 import { useTenant } from '@/features/tenant';
 import { ApiError } from '@/lib/api';
+import ManageHistoryOutlined from '@mui/icons-material/ManageHistoryOutlined';
+import { ChangeHistory } from '@/features/records/ChangeHistory';
 
 /** SCR-009 capture + SCR-010 review for one plucking round (plan first, any order). */
 export default function RoundPage() {
   const { t, i18n } = useTranslation('plucking');
   const { t: tb } = useTranslation('backfill');
+  const { t: tr } = useTranslation('records');
   const router = useRouter();
   const roundId =
     typeof router.query['roundId'] === 'string'
@@ -439,6 +443,14 @@ export default function RoundPage() {
             </Card>
           )}
 
+          {can('audit.view') && (
+            <SummaryCard
+              title={tr('history.section')}
+              icon={<ManageHistoryOutlined fontSize='small' />}
+            >
+              <ChangeHistory entityId={round.id} />
+            </SummaryCard>
+          )}
           {roundId && (
             <EntityPhotos
               entityId={roundId}

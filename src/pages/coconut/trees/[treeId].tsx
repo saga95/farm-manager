@@ -19,6 +19,7 @@ import Typography from '@mui/material/Typography';
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
+import ManageHistoryOutlined from '@mui/icons-material/ManageHistoryOutlined';
 import { AppPage } from '@/components/AppPage';
 import { EmptyState } from '@/components/ui/EmptyState/EmptyState';
 import { SummaryCard } from '@/components/ui/SummaryCard/SummaryCard';
@@ -30,6 +31,7 @@ import { EntityPhotos } from '@/features/media/components/EntityPhotos';
 import { SizeHistoryCard } from '@/features/samples/components/SizeHistoryCard';
 import { StatTile } from '@/components/ui/StatTile/StatTile';
 import { useZones } from '@/features/farm/hooks';
+import { ChangeHistory } from '@/features/records/ChangeHistory';
 import { useTenant } from '@/features/tenant';
 import { type TreeHarvest, setHarvestPredictionUse } from '@/lib/api';
 
@@ -57,6 +59,7 @@ export default function TreeProfilePage() {
   const tree = useTree(treeId);
   const history = useTreeHistory(treeId);
   const { t: tb } = useTranslation('backfill');
+  const { t: tr } = useTranslation('records');
   const qc = useQueryClient();
   // AC-BF-005: include / exclude a harvest from prediction
   const predictionUse = useMutation({
@@ -221,6 +224,14 @@ export default function TreeProfilePage() {
             </>
           )}
 
+          {tree.data && can('audit.view') && (
+            <SummaryCard
+              title={tr('history.section')}
+              icon={<ManageHistoryOutlined fontSize='small' />}
+            >
+              <ChangeHistory entityId={tree.data.id} />
+            </SummaryCard>
+          )}
           {tree.data && (
             <EntityPhotos
               entityId={tree.data.id}
