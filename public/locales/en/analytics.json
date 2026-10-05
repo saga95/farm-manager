@@ -1,0 +1,84 @@
+{
+  "title": "Reports",
+  "period": {
+    "label": "Period",
+    "3m": "Last 3 months",
+    "12m": "Last 12 months",
+    "year": "This year",
+    "all": "All time"
+  },
+  "scope": "{{from}} – {{to}}",
+  "tabs": { "coconut": "Coconuts", "sales": "Sales & stock", "crops": "Other crops" },
+  "includeNonProducing": "Include trees that aren't producing",
+  "chart": { "table": "Show as table", "chart": "Show as chart", "month": "Month" },
+  "coconut": {
+    "nuts": "Coconuts harvested",
+    "records": "Tree harvests recorded",
+    "avg": "Average per tree harvest",
+    "producing": "Producing trees",
+    "byMonth": "Coconuts by month",
+    "coconuts": "Coconuts",
+    "facts": "From your records",
+    "noFacts": "Not enough records yet. Facts appear once trees have a few recorded pluckings.",
+    "insight": {
+      "TOP_AVERAGE": "{{code}} averaged {{average}} coconuts over its {{harvests}} recorded pluckings.",
+      "OVERDUE_VS_MEDIAN": "{{code}} has not been plucked for {{days}} days. Its median recorded interval is {{medianInterval}} days.",
+      "NO_RECENT_RECORD": "{{code}} has no plucking recorded in the last 90 days.",
+      "NO_RECENT_RECORD_NEVER": "{{code}} has no plucking recorded yet."
+    },
+    "rounds": "Plucking rounds",
+    "roundCount": "Rounds",
+    "treesPerRound": "Trees per round",
+    "nutsPerRound": "Coconuts per round",
+    "nutsPerTree": "Average per tree in a round",
+    "samples": "Dehusked samples",
+    "samplesNote": "Share of {{count}} samples in this period. Samples show likely size, not the size of every coconut.",
+    "trees": "Trees",
+    "treesNote": "Missing records mean nothing was recorded, not that a tree produced less.",
+    "col": {
+      "tree": "Tree",
+      "period": "In period",
+      "average": "Average",
+      "best": "Best",
+      "last": "Last plucked",
+      "median": "Typical gap",
+      "next": "Next (est.)",
+      "sample": "Latest sample"
+    },
+    "days": "{{count}} d",
+    "none": "—"
+  },
+  "sales": {
+    "count": "Sales",
+    "calculated": "Calculated value",
+    "actual": "Actually received",
+    "difference": "Difference",
+    "differenceNote": "Over the {{count}} sales with an amount received.",
+    "byMonth": "Calculated sale value by month",
+    "value": "Value",
+    "realized": "Received per coconut",
+    "realizedScope": "Amount received ÷ coconuts sold, over {{sales}} coconut sales ({{nuts}} nuts) with an amount received, {{from}} – {{to}}.",
+    "realizedNone": "Enter amounts received on coconut sales to see this.",
+    "byBuyer": "By buyer",
+    "walkIn": "No buyer",
+    "bySize": "Coconuts sold by size",
+    "anySize": "Any size",
+    "byCrop": "By crop",
+    "col": { "buyer": "Buyer", "sales": "Sales", "quantity": "Quantity", "value": "Value", "size": "Size", "crop": "Crop" }
+  },
+  "stock": {
+    "title": "Stock now",
+    "adjustments": "Use, damage and adjustments in this period",
+    "noAdjustments": "None recorded.",
+    "lowStock": "Low on farm inputs",
+    "noLowStock": "No farm input is at or below its reorder level.",
+    "lowLine": "{{name}}: {{quantity}} {{unit}} (reorder at {{level}})"
+  },
+  "crops": {
+    "none": "No crop harvests recorded in this period.",
+    "harvested": "{{crop}} harvested ({{unit}})",
+    "total": "Total: {{total}} {{unit}}"
+  },
+  "failed": "Couldn't load the report. Please try again.",
+  "noAccess": "You don't have access to reports."
+}

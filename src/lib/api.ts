@@ -1546,3 +1546,66 @@ export const setHarvestPredictionUse = async (
       excludeFromPrediction: exclude,
     })
   ) as TreeHarvest;
+
+// ─── Analytics (#99, #100) ──────────────────────────────────────────────────
+
+export interface AnalyticsReport {
+  period: { from: string; to: string };
+  generatedAt: string;
+  includeNonProducing: boolean;
+  coconut: {
+    totals: {
+      nuts: number;
+      harvestRecords: number;
+      avgPerHarvest: number | null;
+      producingTrees: number;
+      trees: number;
+    };
+    byMonth: { month: string; value: number; count: number }[];
+    rounds: ReturnType<typeof import('@/domain/analytics').roundStats>;
+    samples: ReturnType<typeof import('@/domain/analytics').sampleDistribution>;
+    trees: (import('@/domain/analytics').TreeStats & {
+      nextEstimate: string | null;
+    })[];
+    insights: import('@/domain/analytics').Insight[];
+  };
+  sales: import('@/domain/analytics').SalesSummary;
+  stock: {
+    current: {
+      cropCode: string;
+      cropName: string;
+      unit: string;
+      byState: StockByState;
+      total: number;
+    }[];
+    adjustments: ReturnType<
+      typeof import('@/domain/analytics').stockAdjustments
+    >;
+    inputs: number;
+    lowStock: {
+      id: string;
+      name: string;
+      quantity: number;
+      unit: string;
+      reorderLevel?: number | null;
+    }[];
+  };
+  crops: ReturnType<typeof import('@/domain/analytics').cropHarvests>;
+}
+
+export const getAnalytics = async (
+  tenantId: string,
+  farmId: string,
+  period: { from: string; to: string },
+  includeNonProducing = false
+): Promise<AnalyticsReport> => {
+  const raw = unwrap(
+    await q('getAnalytics')({
+      tenantId,
+      farmId,
+      ...period,
+      includeNonProducing,
+    })
+  ) as string | AnalyticsReport;
+  return typeof raw === 'string' ? (JSON.parse(raw) as AnalyticsReport) : raw;
+};
