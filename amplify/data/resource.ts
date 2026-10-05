@@ -653,6 +653,27 @@ const schema = a.schema({
     .authorization(allow => [allow.authenticated()])
     .handler(a.handler.function(farmApi)),
 
+  HarvestRoundRef: a.customType({
+    id: a.id().required(),
+    roundDate: a.string().required(),
+    status: a.string().required(),
+    deletedAt: a.string(),
+    version: a.integer().required(),
+  }),
+
+  HarvestDetail: a.customType({
+    harvest: a.ref('TreeHarvest').required(),
+    sample: a.ref('CoconutSample'),
+    round: a.ref('HarvestRoundRef'),
+  }),
+
+  getHarvest: a
+    .query()
+    .arguments({ tenantId: a.id().required(), harvestId: a.id().required() })
+    .returns(a.ref('HarvestDetail').required())
+    .authorization(allow => [allow.authenticated()])
+    .handler(a.handler.function(farmApi)),
+
   setHarvestPredictionUse: a
     .mutation()
     .arguments({

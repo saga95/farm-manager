@@ -1667,3 +1667,20 @@ export const exportCsv = async (
     filename: string;
     csv: string;
   };
+
+// ─── Tree harvest detail (#58) ──────────────────────────────────────────────
+
+export interface HarvestDetail {
+  harvest: TreeHarvest;
+  sample: CoconutSample | null;
+  round: {
+    id: string;
+    roundDate: string;
+    status: string;
+    deletedAt?: string | null;
+    version: number;
+  } | null;
+}
+
+export const getHarvest = async (tenantId: string, harvestId: string) =>
+  unwrap(await q('getHarvest')({ tenantId, harvestId })) as HarvestDetail;

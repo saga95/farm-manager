@@ -9,7 +9,9 @@
     "noMatch": "No trees match your search.",
     "count_one": "{{count}} tree",
     "count_other": "{{count}} trees",
-    "filterAll": "All"
+    "filterAll": "All",
+    "zoneFilter": "Zone",
+    "allZones": "All zones"
   },
   "status": {
     "PRODUCING": "Producing",
@@ -89,7 +91,8 @@
     "nuts": "nuts",
     "none": "—",
     "approximate": "Approximate",
-    "viewRound": "View round"
+    "viewRound": "View round",
+    "details": "Details"
   },
   "prediction": {
     "title": "Next plucking",

@@ -155,7 +155,7 @@ describe('CSV export (#106)', () => {
   it('trees, harvests and sales with headers; formulas neutralised', async () => {
     const trees = await csv('trees');
     expect(trees.filename).toBe(
-      `Home-Farm-trees-${  new Date().toISOString().slice(0, 10)  }.csv`
+      `Home-Farm-trees-${new Date().toISOString().slice(0, 10)}.csv`
     );
     expect(trees.csv.split('\r\n')[0]).toBe(
       '﻿Tree code,Label,Status,Variety,Planted,Last plucked,Latest sample size,Notes'

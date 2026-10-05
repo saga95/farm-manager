@@ -305,15 +305,13 @@ export default function TreeProfilePage() {
                         sx={{ mr: 1 }}
                       />
                     )}
-                    {h.roundId && (
-                      <Button
-                        component={NextLink}
-                        href={`/coconut/rounds/${h.roundId}`}
-                        size='small'
-                      >
-                        {t('history.viewRound')}
-                      </Button>
-                    )}
+                    <Button
+                      component={NextLink}
+                      href={`/coconut/harvests/${h.id}`}
+                      size='small'
+                    >
+                      {t('history.details')}
+                    </Button>
                   </ListItem>
                 ))}
               </List>

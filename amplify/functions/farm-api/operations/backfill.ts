@@ -350,3 +350,47 @@ export const setHarvestPredictionUse = tenantOperation({
     return toView(item);
   },
 });
+
+/** SCR-011 tree harvest detail (#58): the harvest, its sample and round. */
+export const getHarvest = tenantOperation({
+  name: 'getHarvest',
+  entitlement: 'farm.view',
+  input: z.object({ tenantId: z.string().min(1), harvestId: id }),
+  handler: async (input, ctx) => {
+    const h = await getById(input.harvestId, ctx);
+    if (!h || h['entityType'] !== 'TreeHarvest')
+      throw notFound('Harvest not found');
+    const [sample, round] = await Promise.all([
+      getItem(
+        keys.sample(
+          ctx.access.tenantId,
+          String(h['treeId']),
+          String(h['harvestDate']),
+          input.harvestId
+        )
+      ),
+      h['roundId']
+        ? getById(String(h['roundId']), ctx)
+        : Promise.resolve(undefined),
+    ]);
+    return {
+      harvest: toView(h),
+      sample:
+        sample &&
+        sample['tenantId'] === ctx.access.tenantId &&
+        !sample['deletedAt']
+          ? toView(sample)
+          : null,
+      round:
+        round && round['entityType'] === 'PluckingRound'
+          ? {
+              id: round['id'],
+              roundDate: round['roundDate'],
+              status: round['status'],
+              deletedAt: round['deletedAt'] ?? null,
+              version: round['version'],
+            }
+          : null,
+    };
+  },
+});
