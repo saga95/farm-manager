@@ -252,3 +252,36 @@ describe('backfill a past sale (#101, §18.2)', () => {
     ).rejects.toThrow(/^VALIDATION: allocations: 1 nuts sold but 0/);
   });
 });
+
+describe('tree harvest detail (#58)', () => {
+  it('returns the harvest with its sample and round; other tenants get NOT_FOUND', async () => {
+    const round = await past('2026-03-01', [['C-001', 20, true]]);
+    const h = all().find(i => i['entityType'] === 'TreeHarvest')!;
+    await call('recordCoconutSample', {
+      harvestId: h['id'],
+      sampleId: ulid(),
+      sizeClass: 'MEDIUM',
+    });
+    const d = await call('getHarvest', { harvestId: h['id'] });
+    expect(d).toMatchObject({
+      harvest: {
+        quantity: 20,
+        recordQuality: 'APPROXIMATE',
+        source: 'WHATSAPP_BACKFILL',
+        treeCode: 'C-001',
+      },
+      sample: { sizeClass: 'MEDIUM' },
+      round: { id: round['id'], roundDate: '2026-03-01', status: 'COMPLETE' },
+    });
+    await expect(
+      handler({
+        arguments: {
+          tenantId: '01J9ZQ3M5K8R2V7W4X6Y0A1B2D',
+          harvestId: h['id'],
+        },
+        identity: { sub: 'stranger', claims: {} },
+        info: { fieldName: 'getHarvest' },
+      } as unknown as AppSyncResolverEvent<Rec>)
+    ).rejects.toThrow(/^FORBIDDEN|^NOT_FOUND/);
+  });
+});

@@ -46,6 +46,14 @@ export default function TreesPage() {
     )
       setSize(sizeParam as ClassifiedSize);
   }, [sizeParam]);
+  // Deep links from search (#102): ?status=PRODUCING, ?zone=<id>
+  const [zone, setZone] = useState('ALL');
+  const statusParam = router.query['status'];
+  const zoneParam = router.query['zone'];
+  useEffect(() => {
+    if (typeof statusParam === 'string') setStatus(statusParam);
+    if (typeof zoneParam === 'string') setZone(zoneParam);
+  }, [statusParam, zoneParam]);
   const [adding, setAdding] = useState(false);
   const trees = useTrees(showInactive);
   const zones = useZones();
@@ -54,8 +62,11 @@ export default function TreesPage() {
   const all = useMemo(() => trees.data ?? [], [trees.data]);
   const counts = useMemo(() => countByStatus(all), [all]);
   const visible = useMemo(
-    () => filterTrees(all, search, status, size),
-    [all, search, status, size]
+    () =>
+      filterTrees(all, search, status, size).filter(
+        tr => zone === 'ALL' || tr.zoneId === zone
+      ),
+    [all, search, status, size, zone]
   );
   const zoneName = useMemo(
     () => new Map((zones.data ?? []).map(z => [z.id, z.name])),
@@ -128,6 +139,22 @@ export default function TreesPage() {
             />
           ))}
         </Stack>
+        {(zones.data ?? []).length > 0 && (
+          <TextField
+            select
+            label={t('trees.zoneFilter')}
+            value={zone}
+            onChange={e => setZone(e.target.value)}
+            sx={{ maxWidth: { sm: tokens.sizes.cardNarrow } }}
+          >
+            <MenuItem value='ALL'>{t('trees.allZones')}</MenuItem>
+            {(zones.data ?? []).map(z => (
+              <MenuItem key={z.id} value={z.id}>
+                {z.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
         <TextField
           select
           label={ts('filter.label')}

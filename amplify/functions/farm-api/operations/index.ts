@@ -26,7 +26,7 @@ import {
 } from './cycles';
 import { getAnalytics } from './analytics';
 import { exportCsv, listAudit } from './records';
-import { backfillRound, setHarvestPredictionUse } from './backfill';
+import { backfillRound, getHarvest, setHarvestPredictionUse } from './backfill';
 import { createTenant } from './createTenant';
 import {
   createInputItem,
@@ -154,6 +154,7 @@ export const OPERATIONS: Readonly<Record<string, Operation>> =
       exportCsv,
       backfillRound,
       setHarvestPredictionUse,
+      getHarvest,
       backfillSale,
       getTreeHistory,
       listDueTrees,

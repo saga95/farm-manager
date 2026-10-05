@@ -112,5 +112,31 @@
     "reason": "Reason (optional)",
     "stockUsed": "Nuts from this round were already sold, used or dehusked, so it can't be removed. Adjust the stock first.",
     "failed": "That didn't work. Reload and try again."
+  },
+  "harvestDetail": {
+    "title": "{{code}} · {{date}}",
+    "nuts": "Coconuts",
+    "quality": "Record",
+    "qualities": {
+      "CONFIRMED": "Counted",
+      "APPROXIMATE": "Estimate",
+      "INCOMPLETE": "Incomplete"
+    },
+    "source": "Entered",
+    "sources": {
+      "LIVE_APP": "During the round",
+      "WHATSAPP_BACKFILL": "Later, from WhatsApp",
+      "MANUAL_BACKFILL": "Later, from notes"
+    },
+    "round": "Plucking round of {{date}}",
+    "openRound": "Open round",
+    "sample": "Dehusked sample",
+    "notSampled": "Not sampled",
+    "previous": "Corrected from {{count}}",
+    "removed": "This record was removed. It isn't counted anywhere.",
+    "correct": "Correct or remove",
+    "editInRound": "Change this in the open round",
+    "openTree": "Open tree",
+    "notFound": "This harvest record wasn't found."
   }
 }

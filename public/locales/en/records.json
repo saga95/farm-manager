@@ -60,5 +60,29 @@
     "preparing": "Preparing…",
     "failed": "Couldn't prepare the file. Please try again.",
     "noAccess": "You don't have access to export data."
+  },
+  "search": {
+    "title": "Search",
+    "label": "Search trees, buyers, sales, rounds, stock…",
+    "help": "Try a tree code (C-14), a name, or a date like 2026-03.",
+    "quick": "Quick filters",
+    "filters": {
+      "producing": "Producing trees",
+      "due": "Due soon",
+      "small": "Latest sample Small",
+      "medium": "Latest sample Medium",
+      "large": "Latest sample Large",
+      "history": "Not enough history"
+    },
+    "none": "Nothing matches “{{q}}”.",
+    "kinds": {
+      "tree": "Trees",
+      "cycle": "Crop cycles",
+      "buyer": "Buyers",
+      "round": "Plucking rounds",
+      "sale": "Sales",
+      "input": "Farm inputs",
+      "batch": "Produce stock"
+    }
   }
 }
