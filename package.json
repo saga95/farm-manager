@@ -2,7 +2,7 @@
   "name": "farm-manager",
   "version": "0.0.0-semantically-released",
   "private": true,
-  "description": "My Smart Need AgriTech — multi-tenant, mobile-first Smart Farm & Garden Management platform (Next.js + AWS Amplify Gen 2).",
+  "description": "My Smart Need AgriTech \u2014 multi-tenant, mobile-first Smart Farm & Garden Management platform (Next.js + AWS Amplify Gen 2).",
   "author": "saga95",
   "license": "MIT",
   "repository": {
@@ -43,7 +43,8 @@
     "analyze": "ANALYZE=true next build",
     "seo:mcp:dev": "cd tools/seo-intelligence-mcp && npx tsx watch src/index.ts",
     "seo:mcp:build": "cd tools/seo-intelligence-mcp && npx tsc",
-    "seo:mcp:start": "node tools/seo-intelligence-mcp/dist/index.js"
+    "seo:mcp:start": "node tools/seo-intelligence-mcp/dist/index.js",
+    "test:e2e:live": "playwright test -c playwright.live.config.ts"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

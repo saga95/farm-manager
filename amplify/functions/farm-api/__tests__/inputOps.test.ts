@@ -66,6 +66,7 @@ beforeEach(async () => {
     unit: 'KG',
     reorderLevel: 5,
     openingQuantity: 25,
+    openingDate: '2025-12-31',
   });
 });
 
@@ -140,12 +141,12 @@ describe('farm-input items (#80, AC-IN-005)', () => {
   });
 
   it('history is newest first and paginated', async () => {
-    await move('STOCK_OUT', 1, { transactionDate: '2026-10-05' });
-    await move('STOCK_OUT', 1, { transactionDate: '2026-10-06' });
+    await move('STOCK_OUT', 1, { transactionDate: '2026-01-05' });
+    await move('STOCK_OUT', 1, { transactionDate: '2026-01-06' });
     const page = await call('getInputItem', { itemId, limit: 2 });
     expect(
       (page['transactions'] as Rec[]).map(t => t['transactionDate'])
-    ).toEqual(['2026-10-06', '2026-10-05']);
+    ).toEqual(['2026-01-06', '2026-01-05']);
     const next = await call('getInputItem', {
       itemId,
       limit: 2,

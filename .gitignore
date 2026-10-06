@@ -59,3 +59,7 @@ storybook-static
 
 # pnpm store (Amplify build cache)
 .pnpm-store
+
+# Live dev E2E (#128): sessions and reports
+e2e-live/.auth/
+playwright-report-live/
