@@ -34,6 +34,7 @@ import { SIZE_CLASSES } from '../../../../src/domain/samples';
 import { type Item, getById, getItem, requireItem, toView } from '../lib/crud';
 import { ddb, tableName } from '../lib/db';
 import { ApiError, notFound } from '../lib/errors';
+import { jsonArg } from '../lib/json';
 import { type TenantContext, tenantOperation } from '../lib/operation';
 import { type StockChange, type TxItems, stockWrites } from '../lib/stock';
 
@@ -59,26 +60,14 @@ const allocationSchema = z.object({
     .max(100_000)
     .refine(n => roundQty(n) === n, 'at most 3 decimals'),
 });
-/** AWSJSON arguments may arrive as a JSON string or already parsed. */
-const parseJson = (v: unknown): unknown => {
-  if (typeof v !== 'string') return v;
-  try {
-    return JSON.parse(v) as unknown;
-  } catch {
-    return v;
-  }
-};
 const linesSchema = z.array(lineSchema).min(1).max(50);
 /** Live sales must allocate stock (checkSale); backfilled sales have none. */
 const allocationsSchema = z.array(allocationSchema).max(20);
 
 const saleFields = {
   buyerId: id.nullish(),
-  lines: z.preprocess(parseJson, linesSchema) as unknown as typeof linesSchema,
-  allocations: z.preprocess(
-    parseJson,
-    allocationsSchema
-  ) as unknown as typeof allocationsSchema,
+  lines: jsonArg(linesSchema),
+  allocations: jsonArg(allocationsSchema),
   actualAmountReceived: money.nullish(),
   differenceReason: z.string().trim().max(500).nullish(),
   notes: z.string().trim().max(1000).nullish(),

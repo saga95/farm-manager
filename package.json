@@ -22,6 +22,7 @@
     "build": "next build",
     "scan:bundle": "node scripts/scan-client-bundle.mjs",
     "budget:js": "node scripts/check-bundle-budget.mjs",
+    "seed": "esbuild scripts/seed/cli.ts --bundle --platform=node --format=esm --packages=external --outfile=.seed/cli.mjs --log-level=warning && node .seed/cli.mjs",
     "budget:lighthouse": "node scripts/lighthouse-budget.mjs",
     "start": "next start",
     "lint": "eslint . --fix",

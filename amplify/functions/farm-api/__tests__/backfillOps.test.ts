@@ -120,6 +120,21 @@ describe('backfill a past plucking round (#101, AC-BF-001..004)', () => {
     ]);
   });
 
+  it('accepts entries as the AWSJSON string the web client sends', async () => {
+    await call('backfillRound', {
+      farmId: F,
+      roundId: ulid(),
+      roundDate: '2026-03-01',
+      source: 'MANUAL_BACKFILL',
+      entries: JSON.stringify([
+        { treeId: tree('C-001'), harvestId: ulid(), quantity: 12 },
+      ]),
+    });
+    expect(all().filter(i => i['entityType'] === 'TreeHarvest')).toEqual([
+      expect.objectContaining({ quantity: 12 }),
+    ]);
+  });
+
   it('refuses future dates, unknown trees, the same tree twice, and empty rounds', async () => {
     await expect(past('2999-01-01', [['C-001', 1]])).rejects.toThrow(
       /^VALIDATION: roundDate/
