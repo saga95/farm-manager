@@ -143,7 +143,7 @@ const nextConfig = {
   },
 
   // Webpack configuration for performance
-  webpack: (config, { dev, isServer }) => {
+  webpack: config => {
     // SVG handling
     config.module.rules.push({
       test: /\.svg$/i,
@@ -151,34 +151,9 @@ const nextConfig = {
       use: ['@svgr/webpack'],
     });
 
-    // Performance optimizations
-    if (!dev && !isServer) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          ...config.optimization.splitChunks,
-          cacheGroups: {
-            ...config.optimization.splitChunks?.cacheGroups,
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-              priority: 10,
-              reuseExistingChunk: true,
-              enforce: true,
-            },
-            common: {
-              minChunks: 2,
-              chunks: 'all',
-              name: 'common',
-              priority: 5,
-              reuseExistingChunk: true,
-              enforce: true,
-            },
-          },
-        },
-      };
-    }
+    // Chunking is left to Next.js (framework / shared libs / per page). The
+    // template forced every node_module into one `vendors` chunk, so each page
+    // downloaded every library any page used (#108).
 
     return config;
   },

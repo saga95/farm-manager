@@ -89,6 +89,8 @@ jobs:
       - run: pnpm build
       - name: Scan the client bundle for secrets
         run: pnpm scan:bundle
+      - name: JavaScript budget per page (#108)
+        run: pnpm budget:js
 
   storybook:
     name: Storybook Build + Accessibility
