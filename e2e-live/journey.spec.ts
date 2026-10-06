@@ -38,7 +38,7 @@ test('E2E-002: the farm has at least 9 registered trees (bulk registration on fi
   const empty = page.getByText(/No trees registered yet/);
   if (await empty.isVisible().catch(() => false)) {
     await page.goto('/coconut/trees/bulk');
-    await page.getByLabel('How many').fill('50');
+    await page.getByLabel(/^How many/).fill('50');
     await page.getByRole('button', { name: /Register 50 trees/ }).click();
     await page.waitForURL(/\/coconut\/trees(\?|$)/);
   }
@@ -64,7 +64,7 @@ test('E2E-003: plan a 9-tree round and record every tree with Save & Next', asyn
 
   await page.getByRole('button', { name: /^Next: / }).click();
   for (let i = 0; i < COUNTS.length; i += 1) {
-    const count = page.getByLabel('Number of coconuts');
+    const count = page.getByLabel(/^Number of coconuts/);
     await count.fill(String(COUNTS[i]));
     const last = i === COUNTS.length - 1;
     await page
@@ -136,7 +136,7 @@ test('E2E-008: a Medium-preferring restaurant buyer gets a sale with size lines'
 }) => {
   await page.goto('/sales/buyers');
   await page.getByRole('button', { name: 'Add buyer' }).click();
-  await page.getByLabel('Name').fill(`E2E Restaurant ${RUN}`);
+  await page.getByLabel(/^Name/).fill(`E2E Restaurant ${RUN}`);
   // Medium: No → Preferred (one tap)
   await page.getByRole('button', { name: /^Medium: / }).click();
   await page.getByRole('button', { name: 'Save' }).click();
@@ -144,8 +144,8 @@ test('E2E-008: a Medium-preferring restaurant buyer gets a sale with size lines'
   buyerUrl = new URL(page.url()).pathname;
   await page.getByRole('link', { name: 'Record sale to this buyer' }).click();
   await expect(page.getByText(/Usually wants Medium/)).toBeVisible();
-  await page.getByLabel('Nuts').fill('10');
-  await page.getByLabel('Price each').fill('120');
+  await page.getByLabel(/^Nuts/).fill('10');
+  await page.getByLabel(/^Price each/).fill('120');
   await page.getByRole('button', { name: /Fill from oldest/ }).click();
   await page.getByRole('button', { name: 'Save sale' }).click();
   await page.waitForURL(/\/sales\/[0-9A-Z]{26}$/);

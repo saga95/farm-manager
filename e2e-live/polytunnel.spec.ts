@@ -25,7 +25,7 @@ test('E2E-010: a cucumber cycle records a 12.5 kg harvest', async ({
   ) {
     await page.getByRole('button', { name: 'Add zone' }).click();
     const dialog = page.getByRole('dialog');
-    await dialog.getByLabel('Name').fill('E2E Polytunnel');
+    await dialog.getByLabel(/^Name/).fill('E2E Polytunnel');
     await dialog.getByRole('combobox').first().click();
     await page.getByRole('option', { name: 'Polytunnel' }).click();
     await dialog.getByRole('button', { name: 'Save' }).click();
@@ -53,10 +53,10 @@ test('E2E-011: the harvest is sold through the same Sales module', async ({
   page,
 }) => {
   await page.goto('/sales/new');
-  await page.getByLabel('What are you selling?').click();
+  await page.getByLabel(/^What are you selling\?/).click();
   await page.getByRole('option', { name: `Cucumber ${RUN}` }).click();
   await page.getByLabel(/^Quantity \(kg\)/).fill('10.5');
-  await page.getByLabel('Price each').fill('480');
+  await page.getByLabel(/^Price each/).fill('480');
   await page.getByRole('button', { name: /Fill from oldest/ }).click();
   await page.getByRole('button', { name: 'Save sale' }).click();
   await page.waitForURL(/\/sales\/[0-9A-Z]{26}$/);

@@ -1,4 +1,18 @@
+import { readFileSync } from 'node:fs';
 import bundleAnalyzer from '@next/bundle-analyzer';
+import { contentSecurityPolicy } from './security-headers.mjs';
+
+/** Written by `ampx pipeline-deploy` before the build; a stub locally. */
+function readAmplifyOutputs() {
+  try {
+    return JSON.parse(
+      readFileSync(new URL('./amplify_outputs.json', import.meta.url), 'utf8')
+    );
+  } catch {
+    return {};
+  }
+}
+const amplifyOutputs = readAmplifyOutputs();
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
@@ -75,20 +89,10 @@ const nextConfig = {
             value:
               'camera=(), microphone=(), geolocation=(), browsing-topics=()',
           },
-          // Content Security Policy
+          // Content Security Policy: AWS hosts from this deployment's outputs (#107)
           {
             key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
-              "font-src 'self' data:",
-              "connect-src 'self'",
-              "frame-ancestors 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join('; '),
+            value: contentSecurityPolicy(amplifyOutputs),
           },
           // Strict Transport Security
           {
