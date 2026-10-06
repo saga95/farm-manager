@@ -8,8 +8,8 @@ import { STATE, accounts, hasA, hasB } from './env';
 async function signIn(page: Page, who: 'a' | 'b') {
   const { email, password } = accounts[who];
   await page.goto('/auth/login');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByLabel(/^Email/).fill(email);
+  await page.getByLabel(/^Password/).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   // Either the dashboard or, for a new account, setup
   await page.waitForURL(
@@ -17,8 +17,8 @@ async function signIn(page: Page, who: 'a' | 'b') {
     { timeout: 60_000 }
   );
   if (new URL(page.url()).pathname === '/setup') {
-    await page.getByLabel('Account name').fill(`E2E ${who.toUpperCase()}`);
-    await page.getByLabel('Farm name').fill(`E2E farm ${who.toUpperCase()}`);
+    await page.getByLabel(/^Account name/).fill(`E2E ${who.toUpperCase()}`);
+    await page.getByLabel(/^Farm name/).fill(`E2E farm ${who.toUpperCase()}`);
     await page.getByRole('button', { name: 'Create my farm' }).click();
     await page.waitForURL(url => url.pathname === '/', { timeout: 60_000 });
   }

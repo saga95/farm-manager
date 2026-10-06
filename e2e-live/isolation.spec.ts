@@ -25,7 +25,7 @@ test('E2E-012: tenant A cannot open tenant B’s tree', async ({
       .catch(() => false)
   ) {
     await pageB.goto('/coconut/trees/bulk');
-    await pageB.getByLabel('How many').fill('1');
+    await pageB.getByLabel(/^How many/).fill('1');
     await pageB.getByRole('button', { name: /Register 1 trees?/ }).click();
     await pageB.waitForURL(/\/coconut\/trees(\?|$)/);
   }
