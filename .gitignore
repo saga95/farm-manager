@@ -63,3 +63,6 @@ storybook-static
 # Live dev E2E (#128): sessions and reports
 e2e-live/.auth/
 playwright-report-live/
+
+# Seed CLI build (#24)
+.seed/

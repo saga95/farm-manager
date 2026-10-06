@@ -36,6 +36,7 @@ import {
   updateWithAudit,
 } from '../lib/crud';
 import { ddb, tableName } from '../lib/db';
+import { jsonArg } from '../lib/json';
 import { ApiError, notFound } from '../lib/errors';
 import { type TenantContext, tenantOperation } from '../lib/operation';
 import { refreshTreeSnapshot } from '../lib/treeSnapshot';
@@ -91,18 +92,24 @@ export const backfillRound = tenantOperation({
     roundId: id,
     roundDate: isoDate,
     source: z.enum(BACKFILL_SOURCES),
-    entries: z
-      .array(
-        z.object({
-          treeId: id,
-          harvestId: id,
-          quantity: z
-            .number()
-            .refine(isValidQuantity, 'must be a whole number of nuts (0–500)'),
-          approximate: z.boolean().nullish(),
-        })
-      )
-      .max(MAX_TREES_PER_ROUND),
+    // AWSJSON: a string from AppSync, an array from tests (#24 found this)
+    entries: jsonArg(
+      z
+        .array(
+          z.object({
+            treeId: id,
+            harvestId: id,
+            quantity: z
+              .number()
+              .refine(
+                isValidQuantity,
+                'must be a whole number of nuts (0–500)'
+              ),
+            approximate: z.boolean().nullish(),
+          })
+        )
+        .max(MAX_TREES_PER_ROUND)
+    ),
     unattributedQuantity: z.number().int().min(0).max(100_000).nullish(),
     approximate: z.boolean().nullish(),
     excludeFromPrediction: z.boolean().nullish(),
