@@ -1,5 +1,4 @@
 import '@/styles/globals.css';
-import '@aws-amplify/ui-react/styles.css';
 import type { AppProps } from 'next/app';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
@@ -57,6 +56,10 @@ const dmSans = localFont({
     },
   ],
   display: 'swap',
+  // Not preloaded (#108): four weights (~58 kB) preloaded in <head> competed
+  // with the stylesheet on 4G and pushed first paint back. With `swap` the
+  // text paints at once in the size-adjusted fallback, then DM Sans swaps in.
+  preload: false,
   fallback: ['Helvetica Neue', 'Arial', 'sans-serif'],
 });
 

@@ -23,10 +23,19 @@ Issue #108 · SRS v1.1 §25.2. Field workers use mid-range Android phones on 4G,
 | Offline   | LCP 2.73 s · perf 92 · accessibility 98 | LCP 1.78 s · perf 98 · accessibility 100 (local build) |
 | Shared JS | 394 kB (Next.js build output)           | 302 kB (Next.js build output)                          |
 
-The two main changes:
+After per-page chunking went to dev (deploy 46), sign-in on dev still measured LCP 2.78 s. First paint was waiting on two things:
+
+- a 30 kB stylesheet, almost all of it `@aws-amplify/ui-react/styles.css`, which was imported but unused because the app has no Amplify UI components;
+- four preloaded font weights (58 kB) competing with it on the 4G link.
+
+After removing both, the local build measures LCP 1.3 s and performance 100 on sign-in, register and offline. CLS stays at 0 because of the size-adjusted fallback font.
+
+The main changes:
 
 1. **Removed the template's `splitChunks` override.** It forced every `node_modules` package into one `vendors` chunk, so the sign-in page downloaded the chart, form and dialog code of every screen. Next.js's default chunking splits the framework, the shared libraries and each page's own code.
 2. **Fixed the skip link on status pages.** It pointed to `#main-content`, which those pages didn't have.
+3. **Removed the unused Amplify UI stylesheet** and the `@aws-amplify/ui-react` dependency. Render-blocking CSS went from 30 kB to 4 kB.
+4. **DM Sans is no longer preloaded.** It loads when used, and text shows in the fallback until then.
 
 ## What is already in place
 
