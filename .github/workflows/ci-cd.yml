@@ -91,7 +91,7 @@ jobs:
         run: pnpm scan:bundle
 
   storybook:
-    name: Storybook Build
+    name: Storybook Build + Accessibility
     runs-on: ubuntu-latest
     needs: [lint, typecheck]
     steps:
@@ -105,6 +105,9 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm build-storybook
+      # Accessibility gate (#109): axe over every story, light and dark
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:a11y
 
   # E2E runs against a local production build inside the runner, not against
   # a deployed environment (we never create environments for testing).

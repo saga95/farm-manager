@@ -1,43 +1,15 @@
-import Head from 'next/head';
-import Link from 'next/link';
-import { SITE_NAME } from '@/lib/seo';
+import { useTranslation } from 'react-i18next';
+import ErrorOutlineOutlined from '@mui/icons-material/ErrorOutlineOutlined';
+import { StatusPage } from '@/components/ui/StatusPage/StatusPage';
 
 export default function Custom500() {
+  const { t } = useTranslation('shell');
   return (
-    <>
-      <Head>
-        <title>{`Server Error | ${SITE_NAME}`}</title>
-      </Head>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          fontFamily: 'system-ui, sans-serif',
-          textAlign: 'center',
-          padding: '2rem',
-        }}
-      >
-        <h1 style={{ fontSize: '4rem', margin: 0 }}>500</h1>
-        <p style={{ fontSize: '1.25rem', color: '#666', marginTop: '0.5rem' }}>
-          Something went wrong on our end
-        </p>
-        <Link
-          href='/'
-          style={{
-            marginTop: '1.5rem',
-            padding: '0.75rem 1.5rem',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-            textDecoration: 'none',
-            color: 'inherit',
-          }}
-        >
-          Go home
-        </Link>
-      </div>
-    </>
+    <StatusPage
+      icon={<ErrorOutlineOutlined fontSize='large' />}
+      title={t('serverError.title')}
+      message={t('serverError.body')}
+      action={{ label: t('serverError.home'), href: '/' }}
+    />
   );
 }

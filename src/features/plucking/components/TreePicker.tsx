@@ -9,7 +9,8 @@
 import { useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
-import Checkbox from '@mui/material/Checkbox';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import Chip from '@mui/material/Chip';
 import InputAdornment from '@mui/material/InputAdornment';
 import List from '@mui/material/List';
@@ -119,18 +120,23 @@ export function TreePicker({
             const labelId = `pick-${tree.id}`;
             return (
               <ListItem key={tree.id} disablePadding divider>
+                {/* The row itself is the checkbox: a real <input> inside a
+                    button would nest two controls (axe nested-interactive, #109) */}
                 <ListItemButton
+                  role='checkbox'
+                  aria-checked={checked}
+                  aria-labelledby={labelId}
                   onClick={() => toggle(tree.id)}
                   sx={{ borderRadius: 0 }}
                 >
-                  <ListItemIcon sx={{ minWidth: tokens.spacing[10] }}>
-                    <Checkbox
-                      edge='start'
-                      checked={checked}
-                      tabIndex={-1}
-                      disableRipple
-                      inputProps={{ 'aria-labelledby': labelId }}
-                    />
+                  <ListItemIcon
+                    aria-hidden
+                    sx={{
+                      minWidth: tokens.spacing[10],
+                      color: checked ? 'primary.main' : 'action.active',
+                    }}
+                  >
+                    {checked ? <CheckBoxIcon /> : <CheckBoxOutlineBlankIcon />}
                   </ListItemIcon>
                   <ListItemText
                     id={labelId}

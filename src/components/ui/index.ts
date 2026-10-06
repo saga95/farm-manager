@@ -17,3 +17,5 @@ export type {
   SectionLink,
   SectionLinksProps,
 } from './SectionLinks/SectionLinks';
+export { StatusPage } from './StatusPage/StatusPage';
+export type { StatusPageProps } from './StatusPage/StatusPage';
