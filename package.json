@@ -21,6 +21,8 @@
     "dev": "next dev",
     "build": "next build",
     "scan:bundle": "node scripts/scan-client-bundle.mjs",
+    "budget:js": "node scripts/check-bundle-budget.mjs",
+    "budget:lighthouse": "node scripts/lighthouse-budget.mjs",
     "start": "next start",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",

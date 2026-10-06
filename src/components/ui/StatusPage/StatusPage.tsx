@@ -5,7 +5,7 @@
  * in dark mode).
  *
  * @tokens spacing, radius, typography from design-system/tokens.ts
- * @accessibility main landmark + h1; decorative icon hidden; the action is a real link or button.
+ * @accessibility <main id="main-content"> (skip-link target) + h1; decorative icon hidden; the action is a real link or button.
  */
 
 import type { ReactNode } from 'react';
@@ -37,6 +37,8 @@ export function StatusPage({ title, message, icon, action }: StatusPageProps) {
       </Head>
       <Box
         component='main'
+        id='main-content'
+        tabIndex={-1}
         sx={{
           minHeight: '100dvh',
           display: 'flex',

@@ -1,4 +1,5 @@
-# Signed-in E2E against the LIVE dev environment (#128).
+# Signed-in E2E against the LIVE dev environment (#128), and the Lighthouse
+# mobile budget on dev's public pages (#108).
 # Not a merge gate: dev deploys after merge (baseline rule,
 # docs/ENVIRONMENTS_AND_RELEASES.md). Runs nightly and on demand, in the test
 # accounts' own farms. Skips everything when the secrets aren't set.
@@ -38,3 +39,18 @@ jobs:
           name: playwright-report-live
           path: playwright-report-live
           retention-days: 14
+
+  lighthouse:
+    # Needs no accounts: public pages only (signed-in pages: pnpm budget:js)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm budget:lighthouse https://development.d2tkbaot482mat.amplifyapp.com
