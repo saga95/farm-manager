@@ -35,9 +35,30 @@ const grid = (cols: { xs: number; sm: number }) => ({
   },
 });
 
-/** Wide tables scroll inside their card, never the page. */
-function Scroll({ children }: { children: ReactNode }) {
-  return <Box sx={{ overflowX: 'auto', mx: -2, px: 2 }}>{children}</Box>;
+/**
+ * Wide tables scroll inside their card, never the page. The region is
+ * focusable so keyboard users can scroll it too (WCAG 2.1.1, #109).
+ */
+function Scroll({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Box
+      role='region'
+      aria-label={label}
+      tabIndex={0}
+      sx={{
+        overflowX: 'auto',
+        mx: -2,
+        px: 2,
+        '&:focus-visible': {
+          outline: 2,
+          outlineColor: 'primary.main',
+          outlineOffset: -2,
+        },
+      }}
+    >
+      {children}
+    </Box>
+  );
 }
 
 function useFormat() {
@@ -171,7 +192,7 @@ export function CoconutReport({ report }: { report: AnalyticsReport }) {
         <Typography variant='caption' color='text.secondary'>
           {t('coconut.treesNote')}
         </Typography>
-        <Scroll>
+        <Scroll label={t('coconut.trees')}>
           <Table size='small' aria-label={t('coconut.trees')}>
             <TableHead>
               <TableRow>
@@ -310,7 +331,7 @@ export function SalesStockReport({
       />
 
       <SummaryCard title={t('sales.byBuyer')}>
-        <Scroll>
+        <Scroll label={t('sales.byBuyer')}>
           <Table size='small' aria-label={t('sales.byBuyer')}>
             <TableHead>
               <TableRow>

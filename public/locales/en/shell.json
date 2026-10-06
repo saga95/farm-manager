@@ -61,5 +61,15 @@
     "failed_one": "{{count}} change couldn't be sent",
     "failed_other": "{{count}} changes couldn't be sent",
     "retry": "Send now"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This page doesn't exist or has moved. Check the address, or go back to the start.",
+    "home": "Go to home"
+  },
+  "serverError": {
+    "title": "Something went wrong",
+    "body": "The page couldn't be shown. Your records are safe. Try again in a moment.",
+    "home": "Go to home"
   }
 }

@@ -56,7 +56,7 @@ test('E2E-003: plan a 9-tree round and record every tree with Save & Next', asyn
   await page.goto('/coconut/rounds/new');
   const picker = page.getByRole('list', { name: 'New plucking round' });
   for (let i = 0; i < 9; i += 1)
-    await picker.getByRole('button').nth(i).click();
+    await picker.getByRole('checkbox').nth(i).click();
   await expect(page.getByText('9 trees selected')).toBeVisible();
   await page.getByRole('button', { name: 'Start round' }).click();
   await page.waitForURL(/\/coconut\/rounds\/[0-9A-Z]{26}$/);
