@@ -305,3 +305,38 @@ backend.storage.resources.cfnResources.cfnBucket.corsConfiguration = {
     },
   ],
 };
+
+// ─── Media bucket hardening (#107, ADR-0003) ────────────────────────────────────
+//
+// Declared explicitly rather than relying on construct defaults:
+// - every form of public access is blocked; ACLs are disabled (owner-enforced)
+// - versioning is on, so an overwritten or deleted photo can be recovered;
+//   old versions expire after 90 days so recovery space doesn't grow forever
+// - abandoned multipart uploads are cleaned up after a day
+
+const { cfnBucket } = backend.storage.resources.cfnResources;
+cfnBucket.publicAccessBlockConfiguration = {
+  blockPublicAcls: true,
+  blockPublicPolicy: true,
+  ignorePublicAcls: true,
+  restrictPublicBuckets: true,
+};
+cfnBucket.ownershipControls = {
+  rules: [{ objectOwnership: 'BucketOwnerEnforced' }],
+};
+cfnBucket.versioningConfiguration = { status: 'Enabled' };
+cfnBucket.lifecycleConfiguration = {
+  rules: [
+    {
+      id: 'expire-old-versions',
+      status: 'Enabled',
+      noncurrentVersionExpiration: { noncurrentDays: 90 },
+      expiredObjectDeleteMarker: true,
+    },
+    {
+      id: 'abort-incomplete-uploads',
+      status: 'Enabled',
+      abortIncompleteMultipartUpload: { daysAfterInitiation: 1 },
+    },
+  ],
+};

@@ -87,6 +87,8 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      - name: Scan the client bundle for secrets
+        run: pnpm scan:bundle
 
   storybook:
     name: Storybook Build

@@ -20,6 +20,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "scan:bundle": "node scripts/scan-client-bundle.mjs",
     "start": "next start",
     "lint": "eslint . --fix",
     "lint:check": "eslint .",

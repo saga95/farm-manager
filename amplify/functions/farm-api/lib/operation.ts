@@ -5,7 +5,7 @@
  */
 
 import type { AppSyncIdentityCognito, AppSyncResolverEvent } from 'aws-lambda';
-import { ZodError, type ZodType } from 'zod';
+import { ZodError, type ZodType, z } from 'zod';
 import {
   type Entitlement,
   RbacError,
@@ -94,9 +94,14 @@ export function userOperation<I, O>(def: {
   };
 }
 
+/** Only the tenant is read before authorization; the rest waits until the caller is allowed. */
+const tenantOnly = z.object({ tenantId: z.string().min(1).max(64) });
+
 /**
  * A tenant-scoped operation. The input MUST contain `tenantId`; it is verified
- * against the caller's membership and the declared entitlement before the handler runs.
+ * against the caller's membership and the declared entitlement before the
+ * rest of the input is validated (#107), so a non-member learns nothing about
+ * the operation's input shape: every refusal is the same FORBIDDEN.
  */
 export function tenantOperation<I extends { tenantId: string }, O>(def: {
   name: string;
@@ -110,14 +115,15 @@ export function tenantOperation<I extends { tenantId: string }, O>(def: {
     entitlement: def.entitlement,
     run: async (event, now) => {
       const user = userFrom(event, now);
-      const input = parse(def.input, event.arguments);
-      const access = await loadTenantAccess(input.tenantId, user.userId);
+      const { tenantId } = parse(tenantOnly, event.arguments);
+      const access = await loadTenantAccess(tenantId, user.userId);
       try {
         requireEntitlement(access.entitlements, def.entitlement);
       } catch (e) {
         if (e instanceof RbacError) throw forbidden();
         throw e;
       }
+      const input = parse(def.input, event.arguments);
       return def.handler(input, { ...user, access });
     },
   };
